@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 import { ProfileGate } from "@/components/ProfileGate";
 import { RankingBoard } from "@/components/RankingBoard";
 import { ResultReveal } from "@/components/ResultReveal";
@@ -189,18 +190,47 @@ function TestSimulatePartner({
 
 function ShareCode({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+  const [sessionUrl] = useState(() =>
+    typeof window !== "undefined" ? window.location.href : ""
+  );
+
   return (
-    <button
-      onClick={() => {
-        navigator.clipboard?.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }}
-      className="mb-4 w-full rounded-lg border border-dashed border-stone-300 bg-white px-4 py-2 text-center text-sm text-stone-500"
-    >
-      Code de session : <span className="font-mono font-semibold text-stone-900">{code}</span>
-      {" — "}
-      {copied ? "copié !" : "toucher pour copier"}
-    </button>
+    <div className="mb-4 rounded-lg border border-dashed border-stone-300 bg-white p-2">
+      <div className="flex items-stretch gap-2">
+        <button
+          onClick={() => {
+            navigator.clipboard?.writeText(code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+          className="flex-1 rounded-lg px-3 py-2 text-center text-sm text-stone-500"
+        >
+          Code de session : <span className="font-mono font-semibold text-stone-900">{code}</span>
+          {" — "}
+          {copied ? "copié !" : "toucher pour copier"}
+        </button>
+        <button
+          onClick={() => setShowQr((v) => !v)}
+          aria-label="Afficher le QR code de partage"
+          aria-expanded={showQr}
+          className="shrink-0 rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-500 active:bg-stone-100"
+        >
+          📱 QR code
+        </button>
+      </div>
+      {showQr && (
+        <div className="flex flex-col items-center gap-2 border-t border-dashed border-stone-200 p-4">
+          <p className="text-center text-sm text-stone-500">
+            Fais scanner ce code à ton/ta partenaire pour qu&apos;iel rejoigne la session
+          </p>
+          {sessionUrl && (
+            <div className="rounded-lg border border-stone-200 bg-white p-3">
+              <QRCodeSVG value={sessionUrl} size={176} level="M" />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

@@ -43,6 +43,7 @@ export async function GET(
       posterUrl: m.posterUrl,
       synopsis: m.synopsis,
       runtimeMin: m.runtimeMin,
+      genre: m.genre,
       platform: m.platform,
       source: m.source,
     })),

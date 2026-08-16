@@ -7,6 +7,7 @@ export type MovieDTO = {
   posterUrl: string;
   synopsis: string;
   runtimeMin: number;
+  genre: string | null;
   platform: string;
   source: "PLEX" | "DISCOVERY";
 };

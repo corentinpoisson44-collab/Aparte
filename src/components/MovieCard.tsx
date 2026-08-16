@@ -1,4 +1,5 @@
 import type { MovieDTO } from "@/lib/types";
+import { formatRuntime } from "@/lib/format";
 
 export function MovieCard({
   movie,
@@ -38,11 +39,29 @@ export function MovieCard({
         <p className="mt-1 line-clamp-2 text-sm text-stone-500">
           {movie.synopsis}
         </p>
-        <div className="mt-2 flex items-center gap-2 text-xs text-stone-500">
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-stone-500">
           <span className="rounded-full bg-stone-100 px-2 py-0.5">
             {movie.platform}
           </span>
-          <span>{movie.runtimeMin} min</span>
+          {movie.genre && (
+            <span className="rounded-full bg-stone-100 px-2 py-0.5">
+              {movie.genre}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="h-3.5 w-3.5"
+            >
+              <circle cx="10" cy="10" r="7.5" />
+              <path d="M10 6v4l2.5 2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {formatRuntime(movie.runtimeMin)}
+          </span>
         </div>
       </div>
       {(onMoveUp || onMoveDown) && (

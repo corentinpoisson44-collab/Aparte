@@ -5,6 +5,7 @@ import { MovieSource } from "@/generated/prisma/client";
 import { isServerResource, listResources, resolveReachableConnection } from "./discovery";
 import { fetchSectionMovies, listMovieSections, plexPosterUrl } from "./library";
 import { placeholderPoster } from "@/lib/poster-placeholder";
+import type { PlexMovie } from "./types";
 
 export class PlexNotConnectedError extends Error {}
 export class PlexServerUnreachableError extends Error {}
@@ -68,6 +69,13 @@ export async function discoverServer(household: Household) {
   };
 }
 
+function plexGenreLabel(movie: PlexMovie): string | null {
+  if (!movie.Genre || movie.Genre.length === 0) return null;
+  return movie.Genre.slice(0, 2)
+    .map((g) => g.tag)
+    .join(", ");
+}
+
 export async function syncPlexLibrary(household: Household) {
   const clientId = await ensurePlexClientId(household);
   const server = await discoverServer({ ...household, plexClientId: clientId });
@@ -98,6 +106,7 @@ export async function syncPlexLibrary(household: Household) {
           year: movie.year ?? 0,
           synopsis: movie.summary ?? "",
           runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
+          genre: plexGenreLabel(movie),
           posterUrl: movie.thumb
             ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
             : placeholderPoster(movie.title),
@@ -109,6 +118,7 @@ export async function syncPlexLibrary(household: Household) {
           year: movie.year ?? 0,
           synopsis: movie.summary ?? "",
           runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
+          genre: plexGenreLabel(movie),
           posterUrl: movie.thumb
             ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
             : placeholderPoster(movie.title),

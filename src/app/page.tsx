@@ -15,12 +15,15 @@ export default function Home() {
     setError(null);
     try {
       const res = await fetch("/api/sessions", { method: "POST" });
-      const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Impossible de créer une session.");
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? `Impossible de créer une session (${res.status}).`);
         return;
       }
+      const data = await res.json();
       router.push(`/session/${data.code}`);
+    } catch {
+      setError("Erreur réseau, réessaie.");
     } finally {
       setCreating(false);
     }

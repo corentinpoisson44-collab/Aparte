@@ -74,6 +74,8 @@ export default function SessionPage() {
               }
               const data = await fetchSession(code);
               if (data) setSession(data);
+            } catch {
+              alert("Erreur réseau, réessaie.");
             } finally {
               setSubmitting(false);
             }

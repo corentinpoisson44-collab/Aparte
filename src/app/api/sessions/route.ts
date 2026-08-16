@@ -21,8 +21,9 @@ export async function POST() {
 
   const code = newSessionCode();
 
-  // Pas de $transaction/écriture imbriquée : l'adapter HTTP de Neon ne
-  // supporte aucune transaction, on enchaîne donc des requêtes indépendantes.
+  // Requêtes indépendantes plutôt qu'une écriture imbriquée : pas de vraie
+  // exigence d'atomicité ici (un échec partiel régénère juste une session
+  // vide/incomplète, sans conséquence pour l'utilisateur).
   const session = await prisma.session.create({
     data: { code, householdId: household.id },
   });

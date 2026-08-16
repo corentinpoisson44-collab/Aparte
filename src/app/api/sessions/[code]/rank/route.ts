@@ -91,8 +91,8 @@ export async function POST(
     lastRankedMovieIds.add(memberOrder[memberOrder.length - 1]);
   }
 
-  // Pas de $transaction : l'adapter HTTP de Neon ne supporte aucune
-  // transaction, on enchaîne donc des requêtes indépendantes.
+  // Requêtes indépendantes plutôt qu'un $transaction([...]) : pas de vraie
+  // exigence d'atomicité ici.
   await prisma.sessionResult.create({
     data: {
       sessionId: session.id,

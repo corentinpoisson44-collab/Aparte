@@ -1,11 +1,14 @@
 import { PrismaClient, MovieSource } from "../src/generated/prisma/client";
-import { PrismaNeonHttp } from "@prisma/adapter-neon";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL manquante (voir .env.example).");
 }
 
-const adapter = new PrismaNeonHttp(process.env.DATABASE_URL, {});
+neonConfig.webSocketConstructor = ws;
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 const mockMovies: Array<{

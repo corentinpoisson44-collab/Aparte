@@ -1,5 +1,7 @@
 import { PrismaClient } from "@/generated/prisma/client";
-import { PrismaNeonHttp } from "@prisma/adapter-neon";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -9,11 +11,13 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL manquante (voir .env.example).");
 }
 
-// Adapter HTTP (pas WebSocket) : une requête = un appel HTTPS, adapté aux
-// fonctions serverless de Vercel. Ne supporte AUCUNE transaction (ni
-// interactive, ni en lot) : le code évite $transaction et les écritures
-// imbriquées, et enchaîne des requêtes indépendantes à la place.
-const adapter = new PrismaNeonHttp(process.env.DATABASE_URL, {});
+// Adapter WebSocket (Pool) : contrairement au mode HTTP, celui-ci supporte
+// les transactions (nécessaires aux écritures imbriquées de Prisma, même
+// pour un simple insert). `webSocketConstructor` est requis en dehors du
+// runtime Edge, où `WebSocket` n'est pas toujours disponible nativement.
+neonConfig.webSocketConstructor = ws;
+
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
 

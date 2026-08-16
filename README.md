@@ -14,9 +14,10 @@ sortir de sa zone de confort.
 ## Stack (v0)
 
 - **Next.js 16** (App Router, TypeScript, Tailwind CSS v4)
-- **Prisma 7** + **Postgres (Neon)**, via l'adapter HTTP `@prisma/adapter-neon`
-  (une requête = un appel HTTPS, pas de connexion persistante — adapté aux
-  fonctions serverless de Vercel)
+- **Prisma 7** + **Postgres (Neon)**, via l'adapter WebSocket `@prisma/adapter-neon`
+  (`PrismaNeon`/`Pool`, pas le mode HTTP `PrismaNeonHttp` — celui-ci rejette
+  toute transaction, y compris celle que Prisma ouvre implicitement pour un
+  simple `create`, ce qui casse toute écriture)
 - **@dnd-kit** pour le classement en glisser-déposer (souris, tactile, clavier)
 - Pas d'authentification en v0 : un seul foyer (2 profils fixes), choisi une
   fois par appareil (mémorisé en `localStorage`)
@@ -46,14 +47,10 @@ Ouvrir http://localhost:3000, choisir un profil, créer une session, partager
 le code à 5 caractères, classer les films sur le deuxième appareil/onglet
 avec l'autre profil.
 
-⚠️ `src/lib/prisma.ts` utilise l'adapter HTTP de Neon (`PrismaNeonHttp`), qui
-ne supporte **aucune transaction** (ni `$transaction([...])` en lot, ni
-callback interactif, ni écriture imbriquée du type `session.create({ data: {
-sessionMovies: { create: [...] } } })` — Prisma les compile aussi en
-transaction). Les routes API enchaînent donc des requêtes indépendantes
-(`createMany` pour les insertions en lot). Conséquence : pas d'atomicité
-stricte entre ces requêtes (un crash entre deux appels peut laisser un état
-partiel) — acceptable pour ce projet solo/couple, mais à garder en tête.
+Les routes de création/révélation de session enchaînent des requêtes
+indépendantes plutôt que des écritures imbriquées ou un `$transaction([...])`
+— pas de vraie exigence d'atomicité ici, mais si un jour le besoin s'en fait
+sentir, l'adapter WebSocket les supporte (contrairement au mode HTTP).
 
 ## Modèle de données
 

@@ -69,8 +69,8 @@ export async function discoverServer(household: Household) {
   };
 }
 
-function plexGenreLabel(movie: PlexMovie): string | null {
-  if (!movie.Genre || movie.Genre.length === 0) return null;
+function plexGenreLabel(movie: PlexMovie): string {
+  if (!movie.Genre || movie.Genre.length === 0) return "";
   return movie.Genre.slice(0, 2)
     .map((g) => g.tag)
     .join(", ");

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { MovieDTO } from "@/lib/types";
 import { formatRuntime } from "@/lib/format";
 
@@ -18,8 +21,13 @@ export function MovieCard({
   onMoveUp?: () => void;
   onMoveDown?: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+    <div
+      onClick={() => setExpanded((v) => !v)}
+      className="flex cursor-pointer items-center gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm"
+    >
       {rank !== undefined && (
         <div className="flex w-7 shrink-0 items-center justify-center text-lg font-semibold text-stone-400">
           {rank}
@@ -36,7 +44,9 @@ export function MovieCard({
           <h3 className="truncate font-medium">{movie.title}</h3>
           <span className="shrink-0 text-sm text-stone-400">{movie.year}</span>
         </div>
-        <p className="mt-1 line-clamp-2 text-sm text-stone-500">
+        <p
+          className={`mt-1 text-sm text-stone-500 ${expanded ? "" : "line-clamp-2"}`}
+        >
           {movie.synopsis}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-stone-500">
@@ -68,7 +78,10 @@ export function MovieCard({
         <div className="flex shrink-0 flex-col gap-1">
           <button
             type="button"
-            onClick={onMoveUp}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveUp?.();
+            }}
             onPointerDown={(e) => e.stopPropagation()}
             disabled={!canMoveUp}
             aria-label="Monter dans le classement"
@@ -78,7 +91,10 @@ export function MovieCard({
           </button>
           <button
             type="button"
-            onClick={onMoveDown}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveDown?.();
+            }}
             onPointerDown={(e) => e.stopPropagation()}
             disabled={!canMoveDown}
             aria-label="Descendre dans le classement"

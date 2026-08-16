@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { MovieCard } from "@/components/MovieCard";
+import { useEffect, useState } from "react";
 import type { MovieDTO, MovieScoreDTO } from "@/lib/types";
+import { formatRuntime } from "@/lib/format";
+
+const COUNTDOWN_START = 3;
+const TICK_MS = 1300;
 
 export function ResultReveal({
   movies,
@@ -13,12 +16,24 @@ export function ResultReveal({
   winnerMovieId: string;
   scores: MovieScoreDTO[];
 }) {
+  const [count, setCount] = useState(COUNTDOWN_START);
+  const [revealed, setRevealed] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [markedWatched, setMarkedWatched] = useState(false);
   const byId = new Map(movies.map((m) => [m.id, m]));
   const winner = byId.get(winnerMovieId);
 
   const sortedScores = [...scores].sort((a, b) => b.points - a.points);
+
+  useEffect(() => {
+    if (revealed) return;
+    if (count === 0) {
+      const t = setTimeout(() => setRevealed(true), TICK_MS);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setCount((c) => c - 1), TICK_MS);
+    return () => clearTimeout(t);
+  }, [count, revealed]);
 
   async function markWatched() {
     await fetch(`/api/movies/${winnerMovieId}/watched`, { method: "POST" });
@@ -29,46 +44,88 @@ export function ResultReveal({
 
   return (
     <div>
-      <p className="mb-2 text-center text-sm uppercase tracking-wide text-stone-500">
-        Vous allez regarder
-      </p>
-      <MovieCard movie={winner} />
+      <div className="-mx-4 flex min-h-[70vh] flex-col items-center justify-center overflow-hidden bg-ink px-6 py-16 text-paper sm:mx-0">
+        {!revealed ? (
+          <>
+            <p className="mb-6 animate-fade-in text-xs uppercase tracking-[0.3em] text-paper/50">
+              Aparté choisit pour vous…
+            </p>
+            <span
+              key={count}
+              className="animate-count-pop font-display text-[7rem] leading-none text-accent"
+            >
+              {count > 0 ? count : "—"}
+            </span>
+          </>
+        ) : (
+          <div className="flex w-full max-w-xs flex-col items-center text-center">
+            <p
+              className="mb-4 animate-fade-in-up text-xs uppercase tracking-[0.3em] text-paper/50"
+            >
+              Ce soir, vous regardez
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={winner.posterUrl}
+              alt={winner.title}
+              className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
+            />
+            <h2
+              className="animate-fade-in-up font-display text-2xl"
+              style={{ animationDelay: "150ms" }}
+            >
+              {winner.title}
+            </h2>
+            <p
+              className="mt-1 animate-fade-in-up text-sm text-paper/50"
+              style={{ animationDelay: "220ms" }}
+            >
+              {winner.year} · {formatRuntime(winner.runtimeMin)}
+            </p>
+          </div>
+        )}
+      </div>
 
-      <button
-        onClick={markWatched}
-        disabled={markedWatched}
-        className="mt-4 w-full rounded-lg bg-stone-900 px-4 py-3 font-medium text-white disabled:opacity-50"
-      >
-        {markedWatched ? "Marqué comme vu ✓" : "Marquer comme vu"}
-      </button>
+      {revealed && (
+        <div className="animate-fade-in-up px-1 py-5" style={{ animationDelay: "280ms" }}>
+          <button
+            onClick={markWatched}
+            disabled={markedWatched}
+            className="w-full rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-all duration-150 hover:bg-accent active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+          >
+            {markedWatched ? "Marqué comme vu ✓" : "On l'a vu"}
+          </button>
 
-      <button
-        onClick={() => setShowDetails((v) => !v)}
-        className="mt-4 w-full text-center text-sm text-stone-500 hover:text-stone-900"
-      >
-        {showDetails ? "Masquer le détail" : "Voir le détail du calcul"}
-      </button>
+          <button
+            onClick={() => setShowDetails((v) => !v)}
+            className="mt-4 w-full text-center text-sm text-ink/50 transition-colors hover:text-ink"
+          >
+            {showDetails ? "Masquer" : "Voir comment on a choisi"}
+          </button>
 
-      {showDetails && (
-        <ul className="mt-3 flex flex-col gap-2">
-          {sortedScores.map((s) => {
-            const movie = byId.get(s.movieId);
-            if (!movie) return null;
-            return (
-              <li
-                key={s.movieId}
-                className="flex items-center justify-between rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm"
-              >
-                <span className={s.disqualified ? "text-stone-400 line-through" : ""}>
-                  {movie.title}
-                </span>
-                <span className="text-stone-500">
-                  {s.points} pts{s.disqualified ? " · disqualifié (dernier)" : ""}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+          {showDetails && (
+            <ul className="mt-3 flex animate-fade-in-up flex-col border-t border-ink/10">
+              {sortedScores.map((s) => {
+                const movie = byId.get(s.movieId);
+                if (!movie) return null;
+                return (
+                  <li
+                    key={s.movieId}
+                    className="flex items-center justify-between border-b border-ink/10 py-2 text-sm"
+                  >
+                    <span className={s.disqualified ? "text-ink/35 line-through" : ""}>
+                      {movie.title}
+                    </span>
+                    <span className="text-ink/50">
+                      {s.points} point{s.points > 1 ? "s" : ""}
+                      {s.disqualified ? " · écarté (dernier pour l'un de vous)" : ""}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );

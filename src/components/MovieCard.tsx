@@ -26,10 +26,10 @@ export function MovieCard({
   return (
     <div
       onClick={() => setExpanded((v) => !v)}
-      className="flex cursor-pointer items-center gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm"
+      className="flex cursor-pointer items-stretch gap-4 border-b border-ink/10 bg-paper py-3 transition-colors hover:bg-ink/[0.025]"
     >
       {rank !== undefined && (
-        <div className="flex w-7 shrink-0 items-center justify-center text-lg font-semibold text-stone-400">
+        <div className="flex w-9 shrink-0 items-start justify-center pt-1 font-display text-3xl leading-none text-ink/25">
           {rank}
         </div>
       )}
@@ -37,28 +37,22 @@ export function MovieCard({
       <img
         src={movie.posterUrl}
         alt={movie.title}
-        className="h-24 w-16 shrink-0 rounded-md object-cover"
+        className="h-28 w-[4.5rem] shrink-0 object-cover"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <h3 className="truncate font-medium">{movie.title}</h3>
-          <span className="shrink-0 text-sm text-stone-400">{movie.year}</span>
+          <h3 className="truncate font-display text-lg">{movie.title}</h3>
+          <span className="shrink-0 text-sm text-ink/40">{movie.year}</span>
         </div>
         <p
-          className={`mt-1 text-sm text-stone-500 ${expanded ? "" : "line-clamp-2"}`}
+          className={`mt-1 text-sm text-ink/60 ${expanded ? "" : "line-clamp-2"}`}
         >
           {movie.synopsis}
         </p>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-stone-500">
-          <span className="rounded-full bg-stone-100 px-2 py-0.5">
-            {movie.platform}
-          </span>
-          {movie.genre && (
-            <span className="rounded-full bg-stone-100 px-2 py-0.5">
-              {movie.genre}
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs uppercase tracking-wide text-ink/45">
+          <span>{movie.platform}</span>
+          {movie.genre && <span>{movie.genre}</span>}
+          <span className="inline-flex items-center gap-1 text-accent">
             <svg
               aria-hidden="true"
               viewBox="0 0 20 20"
@@ -85,7 +79,7 @@ export function MovieCard({
             onPointerDown={(e) => e.stopPropagation()}
             disabled={!canMoveUp}
             aria-label="Monter dans le classement"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 text-stone-500 disabled:opacity-30 active:bg-stone-100"
+            className="flex h-9 w-9 items-center justify-center rounded-sm border border-ink/15 text-ink/50 transition-all duration-150 disabled:opacity-30 active:scale-95 active:bg-ink/5"
           >
             ▲
           </button>
@@ -98,14 +92,14 @@ export function MovieCard({
             onPointerDown={(e) => e.stopPropagation()}
             disabled={!canMoveDown}
             aria-label="Descendre dans le classement"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 text-stone-500 disabled:opacity-30 active:bg-stone-100"
+            className="flex h-9 w-9 items-center justify-center rounded-sm border border-ink/15 text-ink/50 transition-all duration-150 disabled:opacity-30 active:scale-95 active:bg-ink/5"
           >
             ▼
           </button>
         </div>
       )}
       {draggable && (
-        <div aria-hidden="true" className="shrink-0 px-1 text-stone-300">
+        <div aria-hidden="true" className="shrink-0 self-center px-1 text-ink/25">
           ⠿
         </div>
       )}

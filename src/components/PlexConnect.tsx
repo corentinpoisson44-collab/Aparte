@@ -33,7 +33,7 @@ export function PlexConnect() {
       if (!res.ok) throw new Error();
       setStatus(await res.json());
     } catch {
-      setError("Impossible de charger l'état de la connexion Plex.");
+      setError("Impossible de vérifier ta connexion Plex pour le moment.");
     }
   }, []);
 
@@ -46,7 +46,7 @@ export function PlexConnect() {
         const data = await res.json();
         if (!cancelled) setStatus(data);
       } catch {
-        if (!cancelled) setError("Impossible de charger l'état de la connexion Plex.");
+        if (!cancelled) setError("Impossible de vérifier ta connexion Plex pour le moment.");
       }
     }
     load();
@@ -76,7 +76,7 @@ export function PlexConnect() {
         if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
           if (pollRef.current) clearInterval(pollRef.current);
           setConnecting(false);
-          setError("Délai dépassé, réessaie la connexion Plex.");
+          setError("Ça a pris trop de temps — réessaie de te connecter.");
           return;
         }
         try {
@@ -89,8 +89,8 @@ export function PlexConnect() {
             await loadStatus();
             setMessage(
               data.serverName
-                ? `Connecté au serveur Plex "${data.serverName}".`
-                : "Compte Plex connecté."
+                ? `Connecté à « ${data.serverName} ».`
+                : "Ton compte Plex est connecté."
             );
             if (data.serverError) setError(data.serverError);
           }
@@ -101,7 +101,7 @@ export function PlexConnect() {
     } catch {
       setConnecting(false);
       popup?.close();
-      setError("Impossible de démarrer la connexion Plex.");
+      setError("La connexion à Plex n'a pas pu démarrer, réessaie.");
     }
   }
 
@@ -136,10 +136,12 @@ export function PlexConnect() {
             setSyncProgress({ imported: event.imported, total: event.total });
           } else if (event.type === "done") {
             sawDone = true;
-            setMessage(`${event.imported} film(s) importé(s) depuis "${event.serverName}".`);
+            setMessage(
+              `${event.imported} film${event.imported > 1 ? "s" : ""} ajouté${event.imported > 1 ? "s" : ""} depuis « ${event.serverName} ».`
+            );
           } else if (event.type === "error") {
             sawError = true;
-            setError(event.error ?? "Échec de la synchronisation Plex.");
+            setError(event.error ?? "La mise à jour a échoué, réessaie.");
           }
         }
       }
@@ -147,10 +149,10 @@ export function PlexConnect() {
       if (sawDone) {
         await loadStatus();
       } else if (!sawError) {
-        setError("Synchronisation interrompue, réessaie.");
+        setError("La mise à jour a été interrompue, réessaie.");
       }
     } catch {
-      setError("Erreur réseau pendant la synchronisation.");
+      setError("Petit souci de connexion pendant la mise à jour.");
     } finally {
       setSyncing(false);
       setSyncProgress(null);
@@ -167,49 +169,52 @@ export function PlexConnect() {
   if (!status) return null;
 
   return (
-    <div className="rounded-lg border border-stone-300 p-4">
-      <h2 className="mb-2 text-sm font-medium text-stone-700">Bibliothèque Plex</h2>
+    <div className="animate-fade-in-up rounded-sm border border-ink/15 p-4">
+      <h2 className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-ink/50">
+        Tes films Plex
+      </h2>
 
       {!status.connected ? (
         <>
-          <p className="mb-3 text-sm text-stone-500">
-            Connecte ton compte Plex pour piocher dans les films de ta
-            bibliothèque plutôt que dans une liste fixe.
+          <p className="mb-3 text-sm text-ink/60">
+            Connecte ton compte Plex pour qu&apos;Aparté propose les films
+            que vous avez déjà, plutôt qu&apos;une liste générique.
           </p>
           <button
             onClick={connect}
             disabled={connecting}
-            className="w-full rounded-lg border border-stone-900 px-4 py-2 text-sm font-medium disabled:opacity-50"
+            className="w-full rounded-sm border border-ink px-4 py-2 text-sm font-medium transition-all duration-150 hover:bg-ink hover:text-paper active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
           >
-            {connecting ? "En attente de connexion…" : "Se connecter à Plex"}
+            {connecting ? "Connexion en cours…" : "Se connecter à Plex"}
           </button>
         </>
       ) : (
         <>
-          <p className="mb-3 text-sm text-stone-500">
-            Connecté{status.serverName ? ` à "${status.serverName}"` : ""}
+          <p className="mb-3 text-sm text-ink/60">
+            Connecté{status.serverName ? ` à « ${status.serverName} »` : ""}
             {" — "}
-            {status.moviesCount} film(s) importé(s)
+            {status.moviesCount} film{status.moviesCount > 1 ? "s" : ""} prêt
+            {status.moviesCount > 1 ? "s" : ""} à être proposés
             {status.lastSyncedAt &&
-              `, dernière synchro ${new Date(status.lastSyncedAt).toLocaleString("fr-FR")}`}
+              `, mis à jour le ${new Date(status.lastSyncedAt).toLocaleString("fr-FR")}`}
             .
           </p>
           <div className="flex gap-2">
             <button
               onClick={sync}
               disabled={syncing}
-              className="flex-1 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="flex-1 rounded-sm bg-ink px-4 py-2 text-sm font-medium text-paper transition-all duration-150 hover:bg-accent active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
             >
               {syncing
                 ? syncProgress && syncProgress.total > 0
-                  ? `Synchronisation… ${syncProgress.imported}/${syncProgress.total}`
-                  : "Synchronisation…"
-                : "Synchroniser ma bibliothèque"}
+                  ? `Mise à jour… ${syncProgress.imported}/${syncProgress.total}`
+                  : "Mise à jour…"
+                : "Mettre à jour mes films"}
             </button>
             <button
               onClick={disconnect}
               disabled={syncing}
-              className="shrink-0 rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium disabled:opacity-50"
+              className="shrink-0 rounded-sm border border-ink/20 px-4 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
             >
               Déconnecter
             </button>
@@ -217,14 +222,14 @@ export function PlexConnect() {
           {syncing && (
             <div
               role="progressbar"
-              aria-label="Progression de la synchronisation Plex"
+              aria-label="Progression de la mise à jour Plex"
               aria-valuemin={0}
               aria-valuemax={syncProgress?.total ?? undefined}
               aria-valuenow={syncProgress?.imported}
-              className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-200"
+              className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink/10"
             >
               <div
-                className="h-full rounded-full bg-stone-900 transition-all duration-300"
+                className="h-full rounded-full bg-accent transition-all duration-500 ease-out"
                 style={{
                   width:
                     syncProgress && syncProgress.total > 0
@@ -237,8 +242,8 @@ export function PlexConnect() {
         </>
       )}
 
-      {message && <p className="mt-2 text-sm text-green-700">{message}</p>}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {message && <p className="mt-2 animate-fade-in text-sm text-ink/70">{message}</p>}
+      {error && <p className="mt-2 animate-fade-in text-sm text-accent">{error}</p>}
     </div>
   );
 }

@@ -20,53 +20,53 @@ export default function HistoryPage() {
   }, []);
 
   if (!sessions) {
-    return <p className="p-6 text-center text-stone-500">Chargement…</p>;
+    return <p className="animate-fade-in p-6 text-center text-ink/50">Un instant…</p>;
   }
 
   if (sessions.length === 0) {
     return (
-      <p className="p-6 text-center text-stone-500">
-        Aucune session terminée pour le moment.
+      <p className="animate-fade-in p-6 text-center text-ink/50">
+        Pas encore de soirée film ensemble — lancez votre première session !
       </p>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-6">
-      <h1 className="mb-4 text-xl font-semibold">Historique</h1>
-      <ul className="flex flex-col gap-3">
-        {sessions.map((s) => (
+    <div className="mx-auto max-w-md px-4 py-8">
+      <h1 className="mb-6 animate-fade-in-up font-display text-2xl">
+        Vos soirées
+      </h1>
+      <ul className="flex flex-col border-t border-ink/10">
+        {sessions.map((s, index) => (
           <li
             key={s.code}
-            className="flex gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm"
+            className="flex animate-fade-in-up gap-4 border-b border-ink/10 py-4"
+            style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
           >
             {s.winnerMovie && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={s.winnerMovie.posterUrl}
                 alt={s.winnerMovie.title}
-                className="h-20 w-14 shrink-0 rounded-md object-cover"
+                className="h-24 w-16 shrink-0 object-cover"
               />
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-stone-400">
+              <p className="text-xs uppercase tracking-wide text-ink/40">
                 {new Date(s.createdAt).toLocaleDateString("fr-FR", {
                   day: "numeric",
                   month: "short",
                   year: "numeric",
-                })}{" "}
-                · {s.code}
+                })}
               </p>
-              <p className="truncate font-medium">
+              <p className="truncate font-display text-lg">
                 {s.winnerMovie?.title ?? "—"}
                 {s.winnerMovie?.watched && (
-                  <span className="ml-2 text-xs text-emerald-600">vu ✓</span>
+                  <span className="ml-2 text-xs font-sans text-accent">vu ✓</span>
                 )}
               </p>
-              <p className="mt-1 text-xs text-stone-500">
-                {s.rankings
-                  .map((r) => `${r.memberName} : ${r.order.length} films classés`)
-                  .join(" · ")}
+              <p className="mt-1 text-xs text-ink/50">
+                Classé par {s.rankings.map((r) => r.memberName).join(" et ")}
               </p>
             </div>
           </li>

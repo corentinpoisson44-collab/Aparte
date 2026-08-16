@@ -91,29 +91,29 @@ export async function POST(
     lastRankedMovieIds.add(memberOrder[memberOrder.length - 1]);
   }
 
-  await prisma.$transaction([
-    prisma.sessionResult.create({
-      data: {
+  // Pas de $transaction : l'adapter HTTP de Neon ne supporte aucune
+  // transaction, on enchaîne donc des requêtes indépendantes.
+  await prisma.sessionResult.create({
+    data: {
+      sessionId: session.id,
+      winnerMovieId,
+      scores: JSON.stringify(scores),
+    },
+  });
+  await prisma.session.update({
+    where: { id: session.id },
+    data: { status: SessionStatus.REVEALED },
+  });
+  if (lastRankedMovieIds.size > 0) {
+    await prisma.watchHistory.createMany({
+      data: [...lastRankedMovieIds].map((movieId) => ({
+        householdId: session.householdId,
+        movieId,
         sessionId: session.id,
-        winnerMovieId,
-        scores: JSON.stringify(scores),
-      },
-    }),
-    prisma.session.update({
-      where: { id: session.id },
-      data: { status: SessionStatus.REVEALED },
-    }),
-    ...[...lastRankedMovieIds].map((movieId) =>
-      prisma.watchHistory.create({
-        data: {
-          householdId: session.householdId,
-          movieId,
-          sessionId: session.id,
-          status: WatchStatus.REJECTED_LAST,
-        },
-      })
-    ),
-  ]);
+        status: WatchStatus.REJECTED_LAST,
+      })),
+    });
+  }
 
   return NextResponse.json({ revealed: true, winnerMovieId, guardRailOverridden });
 }

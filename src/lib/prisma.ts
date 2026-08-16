@@ -10,8 +10,9 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Adapter HTTP (pas WebSocket) : une requête = un appel HTTPS, adapté aux
-// fonctions serverless de Vercel. Pas de transactions interactives, mais le
-// code n'en utilise pas (uniquement des $transaction([...]) en lot).
+// fonctions serverless de Vercel. Ne supporte AUCUNE transaction (ni
+// interactive, ni en lot) : le code évite $transaction et les écritures
+// imbriquées, et enchaîne des requêtes indépendantes à la place.
 const adapter = new PrismaNeonHttp(process.env.DATABASE_URL, {});
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });

@@ -47,9 +47,13 @@ le code à 5 caractères, classer les films sur le deuxième appareil/onglet
 avec l'autre profil.
 
 ⚠️ `src/lib/prisma.ts` utilise l'adapter HTTP de Neon (`PrismaNeonHttp`), qui
-ne supporte pas les transactions interactives (callback `$transaction(async
-tx => ...)`) — seulement les transactions en lot (`$transaction([...])`),
-seule forme utilisée dans ce projet.
+ne supporte **aucune transaction** (ni `$transaction([...])` en lot, ni
+callback interactif, ni écriture imbriquée du type `session.create({ data: {
+sessionMovies: { create: [...] } } })` — Prisma les compile aussi en
+transaction). Les routes API enchaînent donc des requêtes indépendantes
+(`createMany` pour les insertions en lot). Conséquence : pas d'atomicité
+stricte entre ces requêtes (un crash entre deux appels peut laisser un état
+partiel) — acceptable pour ce projet solo/couple, mais à garder en tête.
 
 ## Modèle de données
 

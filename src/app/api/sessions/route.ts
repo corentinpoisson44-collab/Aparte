@@ -21,21 +21,23 @@ export async function POST() {
 
   const code = newSessionCode();
 
+  // Pas de $transaction/écriture imbriquée : l'adapter HTTP de Neon ne
+  // supporte aucune transaction, on enchaîne donc des requêtes indépendantes.
   const session = await prisma.session.create({
-    data: {
-      code,
+    data: { code, householdId: household.id },
+  });
+
+  await prisma.sessionMovie.createMany({
+    data: movies.map((m) => ({ sessionId: session.id, movieId: m.id })),
+  });
+
+  await prisma.watchHistory.createMany({
+    data: movies.map((m) => ({
       householdId: household.id,
-      sessionMovies: {
-        create: movies.map((m) => ({ movieId: m.id })),
-      },
-      watchHistory: {
-        create: movies.map((m) => ({
-          householdId: household.id,
-          movieId: m.id,
-          status: WatchStatus.PROPOSED,
-        })),
-      },
-    },
+      movieId: m.id,
+      sessionId: session.id,
+      status: WatchStatus.PROPOSED,
+    })),
   });
 
   return NextResponse.json({ code: session.code }, { status: 201 });

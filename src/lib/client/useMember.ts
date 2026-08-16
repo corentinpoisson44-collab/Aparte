@@ -13,17 +13,27 @@ export function useMember() {
   const [members, setMembers] = useState<Member[] | null>(null);
   const [memberId, setMemberIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       const storedId = localStorage.getItem(STORAGE_KEY);
-      const res = await fetch("/api/members");
-      const data = await res.json();
-      if (cancelled) return;
-      setMemberIdState(storedId);
-      setMembers(data.members);
-      setLoading(false);
+      try {
+        const res = await fetch("/api/members");
+        if (!res.ok) throw new Error(`API /api/members a répondu ${res.status}`);
+        const data = await res.json();
+        if (cancelled) return;
+        setMemberIdState(storedId);
+        setMembers(data.members);
+      } catch {
+        if (cancelled) return;
+        setError(
+          "Impossible de charger les profils. La base de données est peut-être vide (pas encore seedée)."
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
     load();
     return () => {
@@ -38,5 +48,5 @@ export function useMember() {
 
   const currentMember = members?.find((m) => m.id === memberId) ?? null;
 
-  return { members, memberId, currentMember, setMemberId, loading };
+  return { members, memberId, currentMember, setMemberId, loading, error };
 }

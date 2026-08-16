@@ -11,10 +11,14 @@ export function ProfileGate({
 }: {
   children: (memberId: string, currentName: string) => React.ReactNode;
 }) {
-  const { members, memberId, currentMember, setMemberId, loading } = useMember();
+  const { members, memberId, currentMember, setMemberId, loading, error } = useMember();
 
   if (loading) {
     return <p className="p-6 text-stone-500">Chargement…</p>;
+  }
+
+  if (error) {
+    return <p className="p-6 text-center text-red-600">{error}</p>;
   }
 
   if (!memberId || !currentMember) {

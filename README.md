@@ -48,6 +48,18 @@ Le seed récupère l'affiche et le genre de chaque film sur TMDB si
 [themoviedb.org](https://www.themoviedb.org/settings/api)). Sans clé, une
 affiche placeholder et un genre de repli sont utilisés pour chaque film.
 
+### (Re)seeder sans terminal (Vercel)
+
+`npm run db:seed` ne tourne pas automatiquement au déploiement. Pour peupler
+ou rafraîchir le catalogue (affiches/genres TMDB) sur un environnement
+Vercel sans terminal : configure `TMDB_API_KEY` et `ADMIN_SEED_SECRET`
+(valeur arbitraire, ex. générée avec `openssl rand -hex 16`) dans les
+variables d'environnement Vercel (Preview *et* Production), déploie, puis
+visite `https://<ton-app>.vercel.app/api/admin/seed?secret=<ADMIN_SEED_SECRET>`
+dans le navigateur. La réponse JSON indique combien de films ont été
+trouvés sur TMDB. Garde ce secret privé : la route accepte n'importe quel
+appelant qui le connaît.
+
 Ouvrir http://localhost:3000, choisir un profil, créer une session, partager
 le code à 5 caractères, classer les films sur le deuxième appareil/onglet
 avec l'autre profil.

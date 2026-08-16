@@ -3,14 +3,22 @@ import type { MovieDTO } from "@/lib/types";
 export function MovieCard({
   movie,
   rank,
-  dragHandleProps,
+  draggable,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
 }: {
   movie: MovieDTO;
   rank?: number;
-  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  draggable?: boolean;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+    <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
       {rank !== undefined && (
         <div className="flex w-7 shrink-0 items-center justify-center text-lg font-semibold text-stone-400">
           {rank}
@@ -37,12 +45,32 @@ export function MovieCard({
           <span>{movie.runtimeMin} min</span>
         </div>
       </div>
-      {dragHandleProps && (
-        <div
-          {...dragHandleProps}
-          className="flex shrink-0 cursor-grab touch-none items-center px-1 text-stone-300 active:cursor-grabbing"
-          aria-label="Glisser pour réordonner"
-        >
+      {(onMoveUp || onMoveDown) && (
+        <div className="flex shrink-0 flex-col gap-1">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            onPointerDown={(e) => e.stopPropagation()}
+            disabled={!canMoveUp}
+            aria-label="Monter dans le classement"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 text-stone-500 disabled:opacity-30 active:bg-stone-100"
+          >
+            ▲
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            onPointerDown={(e) => e.stopPropagation()}
+            disabled={!canMoveDown}
+            aria-label="Descendre dans le classement"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 text-stone-500 disabled:opacity-30 active:bg-stone-100"
+          >
+            ▼
+          </button>
+        </div>
+      )}
+      {draggable && (
+        <div aria-hidden="true" className="shrink-0 px-1 text-stone-300">
           ⠿
         </div>
       )}

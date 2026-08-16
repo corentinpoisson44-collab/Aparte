@@ -20,6 +20,17 @@ model Household {
   movies  Movie[]
   watchHistory WatchHistory[]
 
+  // Connexion Plex (v2) : identifiant d'appareil stable + jeton de compte
+  // plex.tv, puis serveur retenu après découverte via /api/v2/resources.
+  // Un seul foyer en v0/v1, donc pas de table à part : ces champs suffisent.
+  plexClientId          String?
+  plexAuthToken         String?
+  plexServerId          String?
+  plexServerName        String?
+  plexServerBaseUrl     String?
+  plexServerAccessToken String?
+  plexLastSyncedAt      DateTime?
+
   createdAt DateTime @default(now())
 }
 
@@ -59,6 +70,7 @@ model Movie {
 
   createdAt DateTime @default(now())
 
+  @@unique([householdId, plexKey])
   @@index([householdId])
 }
 

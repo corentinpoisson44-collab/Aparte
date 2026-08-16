@@ -5,8 +5,9 @@ sortir de sa zone de confort.
 
 ## Principe
 
-1. L'app pioche 5 films (v0 : 3 "Plex" + 2 "découverte" simulés en dur — les
-   vraies intégrations Plex/TMDB arrivent en v1/v2, voir plus bas).
+1. L'app pioche 5 films : 3 "Plex" (bibliothèque personnelle, une fois
+   connectée — sinon les mocks seedés) + 2 "découverte" simulés en dur (la
+   vraie intégration TMDB arrive en v1, voir plus bas).
 2. Chaque personne classe ces 5 films indépendamment sur son écran.
 3. Une fois les deux classements soumis, l'app révèle le film gagnant,
    calculé par un Borda count avec garde-fou anti-rejet.
@@ -69,15 +70,29 @@ meilleur classement individuel le plus haut départage. Si le garde-fou
 disqualifie tous les films (rejets différents de chaque côté), il est
 ignoré pour toujours produire un gagnant. Voir `src/lib/ranking.ts`.
 
+## Intégration Plex
+
+Depuis la page d'accueil, "Se connecter à Plex" démarre le flow
+d'authentification officiel de Plex par PIN (aucun mot de passe saisi dans
+l'app) : un pin est créé côté serveur, une fenêtre s'ouvre sur
+`app.plex.tv/auth` pour lier le compte, et l'app sonde
+`GET /api/plex/pin/[id]` jusqu'à obtenir un jeton. Une fois connecté, le
+serveur Plex du compte est découvert automatiquement via
+`plex.tv/api/v2/resources` (connexion directe, relay ou locale — la première
+qui répond est retenue). "Synchroniser ma bibliothèque" importe ensuite tous
+les films de ses bibliothèques de type "movie" dans la table `Movie`
+(`source = PLEX`), en amont du tirage `src/lib/draw.ts`. Voir
+`src/lib/plex/` pour le détail (aucune clé d'API Plex à fournir : le flow PIN
+n'en nécessite pas).
+
 ## Prochaines étapes (v1+)
 
-- **v1** : remplacer les films en dur par une vraie pioche TMDB (découverte
-  + providers de streaming filtrés sur les abonnements).
-- **v2** : intégration Plex (bibliothèque non-vue), ratio Plex/découverte
-  configurable.
+- **v1** : remplacer les films "découverte" en dur par une vraie pioche TMDB
+  (providers de streaming filtrés sur les abonnements).
+- **v2** : ratio Plex/découverte configurable, choix manuel du serveur/de la
+  bibliothèque Plex si plusieurs sont disponibles.
 - **v3** : vrais comptes (magic link), historique enrichi, mobile polish.
 
-### Ce qu'il faudra fournir pour la v1/v2
+### Ce qu'il faudra fournir pour la v1
 
 - **TMDB** : une clé API (gratuite, themoviedb.org).
-- **Plex** : URL du serveur (remote access activé) + token `X-Plex-Token`.

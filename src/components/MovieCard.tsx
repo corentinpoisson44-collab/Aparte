@@ -38,10 +38,15 @@ export function MovieCard({
         <p className="mt-1 line-clamp-2 text-sm text-stone-500">
           {movie.synopsis}
         </p>
-        <div className="mt-2 flex items-center gap-2 text-xs text-stone-500">
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-stone-500">
           <span className="rounded-full bg-stone-100 px-2 py-0.5">
             {movie.platform}
           </span>
+          {movie.genre && (
+            <span className="rounded-full bg-stone-100 px-2 py-0.5">
+              {movie.genre}
+            </span>
+          )}
           <span>{movie.runtimeMin} min</span>
         </div>
       </div>

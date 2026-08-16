@@ -43,6 +43,11 @@ npm run db:seed           # foyer "Corentin / Partenaire" + 15 films mock
 npm run dev
 ```
 
+Le seed récupère l'affiche et le genre de chaque film sur TMDB si
+`TMDB_API_KEY` est renseignée dans `.env` (clé v3 gratuite sur
+[themoviedb.org](https://www.themoviedb.org/settings/api)). Sans clé, une
+affiche placeholder et un genre de repli sont utilisés pour chaque film.
+
 Ouvrir http://localhost:3000, choisir un profil, créer une session, partager
 le code à 5 caractères, classer les films sur le deuxième appareil/onglet
 avec l'autre profil.
@@ -72,7 +77,10 @@ ignoré pour toujours produire un gagnant. Voir `src/lib/ranking.ts`.
 ## Prochaines étapes (v1+)
 
 - **v1** : remplacer les films en dur par une vraie pioche TMDB (découverte
-  + providers de streaming filtrés sur les abonnements).
+  + providers de streaming filtrés sur les abonnements). Les 15 films mock
+  ont déjà leur affiche et leur genre enrichis via TMDB au seed (voir
+  ci-dessus) ; il reste à interroger TMDB pour découvrir de nouveaux films
+  plutôt que de piocher dans une liste figée.
 - **v2** : intégration Plex (bibliothèque non-vue), ratio Plex/découverte
   configurable.
 - **v3** : vrais comptes (magic link), historique enrichi, mobile polish.

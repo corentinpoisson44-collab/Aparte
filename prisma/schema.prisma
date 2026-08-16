@@ -49,6 +49,7 @@ model Movie {
   title       String
   year        Int
   posterUrl   String
+  genre       String   @default("")
   synopsis    String
   runtimeMin  Int
   platform    String // ex: "Plex", "Netflix", "Disney+"

@@ -2,6 +2,7 @@ import { PrismaClient, MovieSource } from "../src/generated/prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
+import { fetchTmdbGenreMap, searchTmdbMovie } from "../src/lib/tmdb";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL manquante (voir .env.example).");
@@ -19,6 +20,8 @@ const mockMovies: Array<{
   platform: string;
   source: MovieSource;
   slug: string;
+  // Repli utilisé si TMDB_API_KEY n'est pas configurée ou si la recherche échoue.
+  fallbackGenre: string;
 }> = [
   // Bibliothèque Plex (non vus)
   {
@@ -30,6 +33,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "chihiro",
+    fallbackGenre: "Animation, Fantastique",
   },
   {
     title: "Blade Runner 2049",
@@ -40,6 +44,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "blade-runner-2049",
+    fallbackGenre: "Science-fiction",
   },
   {
     title: "Parasite",
@@ -50,6 +55,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "parasite",
+    fallbackGenre: "Thriller, Drame",
   },
   {
     title: "Mad Max: Fury Road",
@@ -60,6 +66,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "mad-max-fury-road",
+    fallbackGenre: "Action, Science-fiction",
   },
   {
     title: "Whiplash",
@@ -70,6 +77,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "whiplash",
+    fallbackGenre: "Drame, Musique",
   },
   {
     title: "Le Grand Budapest Hotel",
@@ -80,6 +88,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "grand-budapest-hotel",
+    fallbackGenre: "Comédie, Drame",
   },
   {
     title: "Interstellar",
@@ -90,6 +99,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "interstellar",
+    fallbackGenre: "Science-fiction, Aventure",
   },
   {
     title: "Portrait de la jeune fille en feu",
@@ -100,6 +110,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "portrait-jeune-fille-feu",
+    fallbackGenre: "Drame, Romance",
   },
   // Découverte (hors bibliothèque, streaming)
   {
@@ -111,6 +122,7 @@ const mockMovies: Array<{
     platform: "Netflix",
     source: MovieSource.DISCOVERY,
     slug: "everything-everywhere",
+    fallbackGenre: "Science-fiction, Comédie, Action",
   },
   {
     title: "Dune",
@@ -121,6 +133,7 @@ const mockMovies: Array<{
     platform: "Disney+",
     source: MovieSource.DISCOVERY,
     slug: "dune",
+    fallbackGenre: "Science-fiction, Aventure",
   },
   {
     title: "La La Land",
@@ -131,6 +144,7 @@ const mockMovies: Array<{
     platform: "Netflix",
     source: MovieSource.DISCOVERY,
     slug: "la-la-land",
+    fallbackGenre: "Comédie, Drame, Romance",
   },
   {
     title: "Knives Out",
@@ -141,6 +155,7 @@ const mockMovies: Array<{
     platform: "Amazon Prime Video",
     source: MovieSource.DISCOVERY,
     slug: "knives-out",
+    fallbackGenre: "Policier, Comédie, Mystère",
   },
   {
     title: "Spider-Man: Into the Spider-Verse",
@@ -151,6 +166,7 @@ const mockMovies: Array<{
     platform: "Netflix",
     source: MovieSource.DISCOVERY,
     slug: "spiderverse",
+    fallbackGenre: "Animation, Action, Aventure",
   },
   {
     title: "The Grand Seduction",
@@ -161,6 +177,7 @@ const mockMovies: Array<{
     platform: "Amazon Prime Video",
     source: MovieSource.DISCOVERY,
     slug: "grand-seduction",
+    fallbackGenre: "Comédie, Drame",
   },
   {
     title: "Soul",
@@ -171,11 +188,12 @@ const mockMovies: Array<{
     platform: "Disney+",
     source: MovieSource.DISCOVERY,
     slug: "soul",
+    fallbackGenre: "Animation, Comédie, Fantastique",
   },
 ];
 
-// v0 : pas de dépendance à un service d'images externe (posters TMDB en v1).
-// On génère une affiche placeholder en SVG, couleur dérivée du titre.
+// Repli si TMDB_API_KEY n'est pas configurée ou si un film n'est pas trouvé :
+// affiche placeholder en SVG, couleur dérivée du titre.
 function placeholderPoster(title: string): string {
   let hash = 0;
   for (const char of title) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
@@ -209,10 +227,40 @@ async function main() {
     },
   });
 
+  const tmdbApiKey = process.env.TMDB_API_KEY;
+  const genreMap = tmdbApiKey ? await fetchTmdbGenreMap(tmdbApiKey) : null;
+  if (!tmdbApiKey) {
+    console.warn(
+      "TMDB_API_KEY absente : affiches placeholder et genres de repli utilisés (voir .env.example)."
+    );
+  }
+
+  let tmdbMatches = 0;
+
   for (const m of mockMovies) {
+    let tmdbId: number | null = null;
+    let posterUrl = placeholderPoster(m.title);
+    let genre = m.fallbackGenre;
+
+    if (tmdbApiKey && genreMap) {
+      try {
+        const match = await searchTmdbMovie(tmdbApiKey, m.title, m.year, genreMap);
+        if (match) {
+          tmdbId = match.tmdbId;
+          posterUrl = match.posterUrl ?? posterUrl;
+          genre = match.genre || genre;
+          tmdbMatches += 1;
+        } else {
+          console.warn(`TMDB : aucun résultat pour "${m.title}" (${m.year}), repli utilisé.`);
+        }
+      } catch (err) {
+        console.warn(`TMDB : recherche échouée pour "${m.title}" :`, err);
+      }
+    }
+
     await prisma.movie.upsert({
       where: { id: `seed-${m.slug}` },
-      update: {},
+      update: { posterUrl, genre, tmdbId },
       create: {
         id: `seed-${m.slug}`,
         householdId: household.id,
@@ -222,12 +270,17 @@ async function main() {
         runtimeMin: m.runtimeMin,
         platform: m.platform,
         source: m.source,
-        posterUrl: placeholderPoster(m.title),
+        posterUrl,
+        genre,
+        tmdbId,
       },
     });
   }
 
-  console.log(`Seed OK: household ${household.id}, ${mockMovies.length} films.`);
+  console.log(
+    `Seed OK: household ${household.id}, ${mockMovies.length} films` +
+      (tmdbApiKey ? ` (${tmdbMatches}/${mockMovies.length} trouvés sur TMDB).` : ".")
+  );
 }
 
 main()

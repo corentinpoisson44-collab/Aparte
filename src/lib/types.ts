@@ -5,6 +5,7 @@ export type MovieDTO = {
   title: string;
   year: number;
   posterUrl: string;
+  genre: string;
   synopsis: string;
   runtimeMin: number;
   platform: string;

@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { ProfileGate } from "@/components/ProfileGate";
 import { RankingBoard } from "@/components/RankingBoard";
 import { ResultReveal } from "@/components/ResultReveal";
-import type { SessionStateDTO } from "@/lib/types";
+import type { Member, SessionStateDTO } from "@/lib/types";
 
 const POLL_INTERVAL_MS = 2500;
 
@@ -81,6 +81,22 @@ export default function SessionPage() {
             }
           }
 
+          // Outil de test local : simule le classement (aléatoire) d'un
+          // autre membre du foyer, pour tester le flux de révélation sans
+          // avoir besoin d'un second appareil.
+          const simulateOtherMember = async (otherId: string) => {
+            const shuffled = [...session.movies.map((m) => m.id)].sort(
+              () => Math.random() - 0.5
+            );
+            await fetch(`/api/sessions/${code}/rank`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ memberId: otherId, order: shuffled }),
+            });
+            const data = await fetchSession(code);
+            if (data) setSession(data);
+          };
+
           if (session.status === "REVEALED" && session.result) {
             return (
               <ResultReveal
@@ -100,6 +116,12 @@ export default function SessionPage() {
                 <p className="mt-2 text-stone-500">
                   En attente de {waitingOn.map((m) => m.name).join(", ")}…
                 </p>
+                {waitingOn.length > 0 && (
+                  <TestSimulatePartner
+                    others={waitingOn}
+                    onSimulate={simulateOtherMember}
+                  />
+                )}
               </div>
             );
           }
@@ -112,10 +134,45 @@ export default function SessionPage() {
                 onSubmit={submitRanking}
                 submitting={submitting}
               />
+              {waitingOn.length > 0 && (
+                <TestSimulatePartner
+                  others={waitingOn}
+                  onSimulate={simulateOtherMember}
+                />
+              )}
             </>
           );
         }}
       </ProfileGate>
+    </div>
+  );
+}
+
+// Visible uniquement hors production : permet de simuler le classement
+// du·des autre·s membre·s du foyer pour tester le flux à un seul appareil.
+function TestSimulatePartner({
+  others,
+  onSimulate,
+}: {
+  others: Member[];
+  onSimulate: (memberId: string) => void;
+}) {
+  if (process.env.NODE_ENV === "production") return null;
+  return (
+    <div className="mt-6 rounded-lg border border-dashed border-amber-400 bg-amber-50 p-3 text-sm">
+      <p className="mb-2 text-amber-800">Outil de test — simuler un choix :</p>
+      <div className="flex flex-wrap gap-2">
+        {others.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => onSimulate(m.id)}
+            className="rounded-md border border-amber-400 bg-white px-3 py-1.5 text-amber-700"
+          >
+            🧪 Simuler « {m.name} »
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

@@ -27,9 +27,16 @@ sortir de sa zone de confort.
 
 1. Dans le projet Vercel : **Storage → Create Database → Neon**, puis
    *Connect* au projet — Vercel ajoute automatiquement `DATABASE_URL` (et
-   variantes) en variable d'environnement.
+   variantes, dont `DATABASE_URL_UNPOOLED`) en variable d'environnement.
 2. Le script `build` (`prisma migrate deploy && next build`) applique les
-   migrations à chaque déploiement : rien à faire manuellement.
+   migrations à chaque déploiement : rien à faire manuellement. `prisma
+   migrate deploy` a besoin d'une connexion *directe* (pas via le pooler
+   pgbouncer de Neon) pour poser son advisory lock le temps de la migration
+   — `prisma.config.ts` utilise donc `DATABASE_URL_UNPOOLED` /
+   `POSTGRES_URL_NON_POOLING` en priorité (repli sur `DATABASE_URL` si
+   absentes). Si le build échoue avec `P1002` / "Timed out trying to
+   acquire a postgres advisory lock", vérifier que l'intégration Neon a bien
+   fourni une de ces variantes non-poolées.
 3. Le foyer et les 15 films mock ne sont pas seedés automatiquement en prod
    — lancer `npm run db:seed` une fois en local avec la même `DATABASE_URL`
    (voir ci-dessous), ou depuis la console SQL de Neon.

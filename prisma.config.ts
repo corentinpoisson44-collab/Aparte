@@ -3,6 +3,21 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// `prisma migrate` a besoin d'une connexion *directe* (pas via le pooler
+// pgbouncer de Neon) : il pose un advisory lock (SELECT pg_advisory_lock)
+// pendant toute la durée de la migration, que pgbouncer en mode pooling
+// "transaction" ne peut pas tenir entre deux requêtes — d'où un timeout
+// (P1002 / "Timed out trying to acquire a postgres advisory lock").
+// L'intégration Vercel↔Neon expose la variante non-poolée sous
+// `DATABASE_URL_UNPOOLED` (ou `POSTGRES_URL_NON_POOLING` selon
+// l'intégration). Le runtime applicatif (src/lib/prisma.ts), lui, continue
+// d'utiliser `DATABASE_URL` (poolée) via l'adapter WebSocket Neon, qui n'a
+// pas ce problème. Voir https://pris.ly/d/migrate-advisory-locking.
+const directDatabaseUrl =
+  process.env["DATABASE_URL_UNPOOLED"] ??
+  process.env["POSTGRES_URL_NON_POOLING"] ??
+  process.env["DATABASE_URL"];
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
@@ -10,6 +25,6 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: directDatabaseUrl,
   },
 });

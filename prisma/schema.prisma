@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// v0: un seul foyer (couple) avec exactement 2 membres, pas d'authentification.
+// Les comptes / multi-foyers arriveront en v3.
+model Household {
+  id      String   @id @default(cuid())
+  name    String
+  members Member[]
+  sessions Session[]
+  movies  Movie[]
+  watchHistory WatchHistory[]
+
+  createdAt DateTime @default(now())
+}
+
+model Member {
+  id          String   @id @default(cuid())
+  name        String
+  household   Household @relation(fields: [householdId], references: [id])
+  householdId String
+
+  rankings Ranking[]
+
+  createdAt DateTime @default(now())
+}
+
+enum MovieSource {
+  PLEX
+  DISCOVERY
+}
+
+model Movie {
+  id          String   @id @default(cuid())
+  household   Household @relation(fields: [householdId], references: [id])
+  householdId String
+
+  tmdbId      Int?
+  plexKey     String?
+  title       String
+  year        Int
+  posterUrl   String
+  synopsis    String
+  runtimeMin  Int
+  platform    String // ex: "Plex", "Netflix", "Disney+"
+  source      MovieSource
+
+  sessionMovies SessionMovie[]
+  watchHistory  WatchHistory[]
+
+  createdAt DateTime @default(now())
+
+  @@index([householdId])
+}
+
+enum SessionStatus {
+  PENDING   // en attente que les 2 aient soumis leur classement
+  REVEALED  // resultat calcule et visible
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  household   Household @relation(fields: [householdId], references: [id])
+  householdId String
+  status      SessionStatus @default(PENDING)
+
+  sessionMovies SessionMovie[]
+  rankings      Ranking[]
+  result        SessionResult?
+  watchHistory  WatchHistory[]
+
+  createdAt DateTime @default(now())
+}
+
+model SessionMovie {
+  id        String  @id @default(cuid())
+  session   Session @relation(fields: [sessionId], references: [id])
+  sessionId String
+  movie     Movie   @relation(fields: [movieId], references: [id])
+  movieId   String
+
+  @@unique([sessionId, movieId])
+}
+
+model Ranking {
+  id        String   @id @default(cuid())
+  session   Session  @relation(fields: [sessionId], references: [id])
+  sessionId String
+  member    Member   @relation(fields: [memberId], references: [id])
+  memberId  String
+  // ordre des movieId du session, du plus envie (index 0) au moins envie
+  order     String // JSON.stringify(string[])
+  submittedAt DateTime @default(now())
+
+  @@unique([sessionId, memberId])
+}
+
+model SessionResult {
+  session       Session @relation(fields: [sessionId], references: [id])
+  sessionId     String  @id
+  winnerMovieId String
+  scores        String // JSON: { movieId: { points, disqualified } }[]
+  computedAt    DateTime @default(now())
+}
+
+enum WatchStatus {
+  PROPOSED
+  REJECTED_LAST
+  WATCHED
+}
+
+model WatchHistory {
+  id          String   @id @default(cuid())
+  household   Household @relation(fields: [householdId], references: [id])
+  householdId String
+  movie       Movie    @relation(fields: [movieId], references: [id])
+  movieId     String
+  session     Session? @relation(fields: [sessionId], references: [id])
+  sessionId   String?
+  status      WatchStatus
+  createdAt   DateTime @default(now())
+
+  @@index([householdId, movieId])
+}

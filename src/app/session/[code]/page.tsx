@@ -44,10 +44,10 @@ export default function SessionPage() {
   }, [code]);
 
   if (error) {
-    return <p className="p-6 text-center text-stone-500">{error}</p>;
+    return <p className="p-6 text-center text-ink/50">{error}</p>;
   }
   if (!session) {
-    return <p className="p-6 text-center text-stone-500">Chargement…</p>;
+    return <p className="p-6 text-center text-ink/50">Chargement…</p>;
   }
 
   return (
@@ -122,10 +122,10 @@ export default function SessionPage() {
           if (hasSubmitted) {
             return (
               <div className="py-16 text-center">
-                <p className="text-lg font-medium">
+                <p className="font-display text-xl">
                   Classement envoyé, {currentName} !
                 </p>
-                <p className="mt-2 text-stone-500">
+                <p className="mt-2 text-ink/50">
                   En attente de {waitingOn.map((m) => m.name).join(", ")}…
                 </p>
                 {waitingOn.length > 0 && (
@@ -170,15 +170,15 @@ function TestSimulatePartner({
   onSimulate: (memberId: string) => void;
 }) {
   return (
-    <div className="mt-6 rounded-lg border border-dashed border-amber-400 bg-amber-50 p-3 text-sm">
-      <p className="mb-2 text-amber-800">Outil de test — simuler un choix :</p>
+    <div className="mt-6 rounded-sm border border-dashed border-accent/50 bg-accent/5 p-3 text-sm">
+      <p className="mb-2 text-accent-dim">Outil de test — simuler un choix :</p>
       <div className="flex flex-wrap gap-2">
         {others.map((m) => (
           <button
             key={m.id}
             type="button"
             onClick={() => onSimulate(m.id)}
-            className="rounded-md border border-amber-400 bg-white px-3 py-1.5 text-amber-700"
+            className="rounded-sm border border-accent/40 bg-paper px-3 py-1.5 text-accent-dim"
           >
             🧪 Simuler « {m.name} »
           </button>
@@ -196,7 +196,7 @@ function ShareCode({ code }: { code: string }) {
   );
 
   return (
-    <div className="mb-4 rounded-lg border border-dashed border-stone-300 bg-white p-2">
+    <div className="mb-4 border border-dashed border-ink/25 bg-paper p-2">
       <div className="flex items-stretch gap-2">
         <button
           onClick={() => {
@@ -204,9 +204,12 @@ function ShareCode({ code }: { code: string }) {
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
           }}
-          className="flex-1 rounded-lg px-3 py-2 text-center text-sm text-stone-500"
+          className="flex-1 px-3 py-2 text-center text-sm text-ink/50"
         >
-          Code de session : <span className="font-mono font-semibold text-stone-900">{code}</span>
+          Code de session :{" "}
+          <span className="font-display text-lg tracking-[0.2em] text-ink">
+            {code}
+          </span>
           {" — "}
           {copied ? "copié !" : "toucher pour copier"}
         </button>
@@ -214,18 +217,18 @@ function ShareCode({ code }: { code: string }) {
           onClick={() => setShowQr((v) => !v)}
           aria-label="Afficher le QR code de partage"
           aria-expanded={showQr}
-          className="shrink-0 rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-500 active:bg-stone-100"
+          className="shrink-0 rounded-sm border border-ink/15 px-3 py-2 text-sm text-ink/50 active:bg-ink/5"
         >
           📱 QR code
         </button>
       </div>
       {showQr && (
-        <div className="flex flex-col items-center gap-2 border-t border-dashed border-stone-200 p-4">
-          <p className="text-center text-sm text-stone-500">
+        <div className="flex flex-col items-center gap-2 border-t border-dashed border-ink/15 p-4">
+          <p className="text-center text-sm text-ink/50">
             Fais scanner ce code à ton/ta partenaire pour qu&apos;iel rejoigne la session
           </p>
           {sessionUrl && (
-            <div className="rounded-lg border border-stone-200 bg-white p-3">
+            <div className="border border-ink/15 bg-paper p-3">
               <QRCodeSVG value={sessionUrl} size={176} level="M" />
             </div>
           )}

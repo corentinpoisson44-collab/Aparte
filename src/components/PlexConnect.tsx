@@ -167,26 +167,28 @@ export function PlexConnect() {
   if (!status) return null;
 
   return (
-    <div className="rounded-lg border border-stone-300 p-4">
-      <h2 className="mb-2 text-sm font-medium text-stone-700">Bibliothèque Plex</h2>
+    <div className="rounded-sm border border-ink/15 p-4">
+      <h2 className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-ink/50">
+        Bibliothèque Plex
+      </h2>
 
       {!status.connected ? (
         <>
-          <p className="mb-3 text-sm text-stone-500">
+          <p className="mb-3 text-sm text-ink/60">
             Connecte ton compte Plex pour piocher dans les films de ta
             bibliothèque plutôt que dans une liste fixe.
           </p>
           <button
             onClick={connect}
             disabled={connecting}
-            className="w-full rounded-lg border border-stone-900 px-4 py-2 text-sm font-medium disabled:opacity-50"
+            className="w-full rounded-sm border border-ink px-4 py-2 text-sm font-medium hover:bg-ink hover:text-paper disabled:opacity-50"
           >
             {connecting ? "En attente de connexion…" : "Se connecter à Plex"}
           </button>
         </>
       ) : (
         <>
-          <p className="mb-3 text-sm text-stone-500">
+          <p className="mb-3 text-sm text-ink/60">
             Connecté{status.serverName ? ` à "${status.serverName}"` : ""}
             {" — "}
             {status.moviesCount} film(s) importé(s)
@@ -198,7 +200,7 @@ export function PlexConnect() {
             <button
               onClick={sync}
               disabled={syncing}
-              className="flex-1 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="flex-1 rounded-sm bg-ink px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-accent disabled:opacity-50"
             >
               {syncing
                 ? syncProgress && syncProgress.total > 0
@@ -209,7 +211,7 @@ export function PlexConnect() {
             <button
               onClick={disconnect}
               disabled={syncing}
-              className="shrink-0 rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium disabled:opacity-50"
+              className="shrink-0 rounded-sm border border-ink/20 px-4 py-2 text-sm font-medium disabled:opacity-50"
             >
               Déconnecter
             </button>
@@ -221,10 +223,10 @@ export function PlexConnect() {
               aria-valuemin={0}
               aria-valuemax={syncProgress?.total ?? undefined}
               aria-valuenow={syncProgress?.imported}
-              className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-200"
+              className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink/10"
             >
               <div
-                className="h-full rounded-full bg-stone-900 transition-all duration-300"
+                className="h-full rounded-full bg-accent transition-all duration-300"
                 style={{
                   width:
                     syncProgress && syncProgress.total > 0
@@ -237,8 +239,8 @@ export function PlexConnect() {
         </>
       )}
 
-      {message && <p className="mt-2 text-sm text-green-700">{message}</p>}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {message && <p className="mt-2 text-sm text-ink/70">{message}</p>}
+      {error && <p className="mt-2 text-sm text-accent">{error}</p>}
     </div>
   );
 }

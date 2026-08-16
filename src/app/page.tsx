@@ -37,10 +37,13 @@ export default function Home() {
   }
 
   return (
-    <div className="mx-auto max-w-sm px-4 py-10">
-      <h1 className="mb-1 text-2xl font-semibold">Aparté</h1>
-      <p className="mb-8 text-stone-500">
-        Choisissez un film à deux, sans y passer 30 minutes.
+    <div className="mx-auto max-w-sm px-4 py-12">
+      <h1 className="mb-2 font-display text-4xl leading-none">
+        Un film,<br />à deux.
+      </h1>
+      <p className="mb-10 text-ink/60">
+        Choisissez un film à deux, sans y passer 30 minutes — et en
+        s&apos;encourageant à sortir de sa zone de confort.
       </p>
 
       <ProfileGate>
@@ -50,15 +53,15 @@ export default function Home() {
               <button
                 onClick={createSession}
                 disabled={creating}
-                className="w-full rounded-lg bg-stone-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+                className="w-full rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-colors hover:bg-accent disabled:opacity-50"
               >
                 {creating ? "Création…" : "Créer une session"}
               </button>
-              {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+              {error && <p className="mt-2 text-sm text-accent">{error}</p>}
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-stone-500">
+              <label className="mb-2 block text-xs font-medium uppercase tracking-[0.15em] text-ink/50">
                 Ou rejoindre avec un code
               </label>
               <div className="flex gap-2">
@@ -67,12 +70,12 @@ export default function Home() {
                   onChange={(e) => setJoinCode(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && joinSession()}
                   placeholder="ABCDE"
-                  className="w-full rounded-lg border border-stone-300 px-4 py-3 font-mono uppercase tracking-widest"
+                  className="w-full rounded-sm border border-ink/25 bg-paper px-4 py-3 font-display text-lg uppercase tracking-[0.3em] placeholder:text-ink/30 focus:border-ink focus:outline-none"
                   maxLength={8}
                 />
                 <button
                   onClick={joinSession}
-                  className="shrink-0 rounded-lg border border-stone-900 px-4 py-3 font-medium"
+                  className="shrink-0 rounded-sm border border-ink px-4 py-3 font-medium hover:bg-ink hover:text-paper"
                 >
                   Rejoindre
                 </button>

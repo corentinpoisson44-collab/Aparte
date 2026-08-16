@@ -107,7 +107,7 @@ export function RankingBoard({
 
   return (
     <div>
-      <p className="mb-4 text-sm text-stone-500">
+      <p className="mb-4 text-sm text-ink/50">
         Glisse une carte (n&apos;importe où dessus) pour la réordonner, du
         plus envie (1) au moins envie (5). Ou utilise les flèches ▲▼.
       </p>
@@ -117,7 +117,7 @@ export function RankingBoard({
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col border-t border-ink/10">
             {order.map((id, index) => {
               const movie = byId.get(id);
               if (!movie) return null;
@@ -139,7 +139,7 @@ export function RankingBoard({
       <button
         onClick={() => onSubmit(order)}
         disabled={submitting}
-        className="mt-6 w-full rounded-lg bg-stone-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+        className="mt-6 w-full rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-colors hover:bg-accent disabled:opacity-50"
       >
         {submitting ? "Envoi…" : "Valider mon classement"}
       </button>

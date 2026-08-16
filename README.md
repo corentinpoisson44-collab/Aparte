@@ -5,11 +5,17 @@ sortir de sa zone de confort.
 
 ## Principe
 
-1. L'app pioche 5 films : 3 "Plex" (bibliothèque personnelle, une fois
-   connectée — sinon les mocks seedés) + 2 "découverte" simulés en dur (la
-   vraie intégration TMDB arrive en v1, voir plus bas).
-2. Chaque personne classe ces 5 films indépendamment sur son écran.
-3. Une fois les deux classements soumis, l'app révèle le film gagnant,
+1. Après avoir créé la session, on répond à quelques questions facultatives
+   pour orienter le tirage : durée (court / long / peu importe), ambiance
+   (genre présent dans le catalogue, ou peu importe) et valeur sûre
+   (bibliothèque Plex) vs découverte. Voir "Questions d'orientation"
+   ci-dessous.
+2. L'app pioche 5 films en tenant compte de ces préférences : 3 "Plex"
+   (bibliothèque personnelle, une fois connectée — sinon les mocks seedés) +
+   2 "découverte" simulés en dur (la vraie intégration TMDB arrive en v1,
+   voir plus bas).
+3. Chaque personne classe ces 5 films indépendamment sur son écran.
+4. Une fois les deux classements soumis, l'app révèle le film gagnant,
    calculé par un Borda count avec garde-fou anti-rejet.
 
 ## Stack (v0)
@@ -77,6 +83,18 @@ sources dans lesquelles piocher : `src/lib/draw.ts` ne propose que les films
 dont la plateforme (`Movie.platform`) est cochée. Toutes activées par défaut.
 Voir `src/lib/sources.ts` pour la liste connue et
 `src/components/SourceSelector.tsx` pour l'UI.
+
+## Questions d'orientation
+
+`POST /api/sessions` crée la session sans tirer de film. La page d'accueil
+enchaîne alors sur `src/components/OrientationQuestions.tsx` : durée (court
+≤ 100 min / long / peu importe), ambiance (genres distincts du catalogue,
+récupérés via `GET /api/household/genres`, ou peu importe) et valeur sûre
+(bibliothèque Plex) vs découverte. Une fois les réponses envoyées,
+`POST /api/sessions/[code]/draw` appelle `drawMoviesForHousehold` avec ces
+préférences. Ce sont des priorités souples, pas des filtres stricts :
+`src/lib/draw.ts` complète toujours avec le reste des films éligibles si
+trop peu correspondent aux préférences, pour ne jamais bloquer une session.
 
 ## Algorithme de sélection
 

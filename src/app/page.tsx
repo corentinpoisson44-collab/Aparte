@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { ProfileGate } from "@/components/ProfileGate";
 import { PlexConnect } from "@/components/PlexConnect";
 import { SourceSelector } from "@/components/SourceSelector";
+import { OrientationQuestions } from "@/components/OrientationQuestions";
 
 export default function Home() {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
 
   async function createSession() {
     setCreating(true);
@@ -23,7 +25,7 @@ export default function Home() {
         return;
       }
       const data = await res.json();
-      router.push(`/session/${data.code}`);
+      setPendingCode(data.code);
     } catch {
       setError("Petit souci de connexion — réessaie.");
     } finally {
@@ -50,48 +52,56 @@ export default function Home() {
       </p>
 
       <ProfileGate>
-        {() => (
-          <div
-            className="flex animate-fade-in-up flex-col gap-8"
-            style={{ animationDelay: "150ms" }}
-          >
-            <div>
-              <button
-                onClick={createSession}
-                disabled={creating}
-                className="w-full rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-all duration-150 hover:bg-accent active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-              >
-                {creating ? "Un instant…" : "Créer une session"}
-              </button>
-              {error && <p className="mt-2 text-sm text-accent">{error}</p>}
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs font-medium uppercase tracking-[0.15em] text-ink/50">
-                Ou rejoindre avec le code de ton/ta partenaire
-              </label>
-              <div className="flex gap-2">
-                <input
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && joinSession()}
-                  placeholder="ABCDE"
-                  className="w-full rounded-sm border border-ink/25 bg-paper px-4 py-3 font-display text-lg uppercase tracking-[0.3em] placeholder:text-ink/30 transition-colors focus:border-ink focus:outline-none"
-                  maxLength={8}
-                />
+        {() =>
+          pendingCode ? (
+            <OrientationQuestions
+              code={pendingCode}
+              onDrawn={() => router.push(`/session/${pendingCode}`)}
+              onCancel={() => setPendingCode(null)}
+            />
+          ) : (
+            <div
+              className="flex animate-fade-in-up flex-col gap-8"
+              style={{ animationDelay: "150ms" }}
+            >
+              <div>
                 <button
-                  onClick={joinSession}
-                  className="shrink-0 rounded-sm border border-ink px-4 py-3 font-medium transition-all duration-150 hover:bg-ink hover:text-paper active:scale-[0.98]"
+                  onClick={createSession}
+                  disabled={creating}
+                  className="w-full rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-all duration-150 hover:bg-accent active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
                 >
-                  Rejoindre
+                  {creating ? "Un instant…" : "Créer une session"}
                 </button>
+                {error && <p className="mt-2 text-sm text-accent">{error}</p>}
               </div>
-            </div>
 
-            <PlexConnect />
-            <SourceSelector />
-          </div>
-        )}
+              <div>
+                <label className="mb-2 block text-xs font-medium uppercase tracking-[0.15em] text-ink/50">
+                  Ou rejoindre avec le code de ton/ta partenaire
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && joinSession()}
+                    placeholder="ABCDE"
+                    className="w-full rounded-sm border border-ink/25 bg-paper px-4 py-3 font-display text-lg uppercase tracking-[0.3em] placeholder:text-ink/30 transition-colors focus:border-ink focus:outline-none"
+                    maxLength={8}
+                  />
+                  <button
+                    onClick={joinSession}
+                    className="shrink-0 rounded-sm border border-ink px-4 py-3 font-medium transition-all duration-150 hover:bg-ink hover:text-paper active:scale-[0.98]"
+                  >
+                    Rejoindre
+                  </button>
+                </div>
+              </div>
+
+              <PlexConnect />
+              <SourceSelector />
+            </div>
+          )
+        }
       </ProfileGate>
     </div>
   );

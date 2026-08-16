@@ -31,7 +31,21 @@ model Household {
   plexServerAccessToken String?
   plexLastSyncedAt      DateTime?
 
+  // État d'avancement de la synchro en cours (une synchro peut prendre du
+  // temps sur une grosse bibliothèque) : sondé par le client pour afficher
+  // une progression plutôt qu'un simple spinner bloquant.
+  plexSyncStatus   PlexSyncStatus @default(IDLE)
+  plexSyncTotal    Int?
+  plexSyncImported Int            @default(0)
+  plexSyncError    String?
+
   createdAt DateTime @default(now())
+}
+
+enum PlexSyncStatus {
+  IDLE
+  RUNNING
+  ERROR
 }
 
 model Member {

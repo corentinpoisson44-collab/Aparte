@@ -85,6 +85,13 @@ les films de ses bibliothèques de type "movie" dans la table `Movie`
 `src/lib/plex/` pour le détail (aucune clé d'API Plex à fournir : le flow PIN
 n'en nécessite pas).
 
+Une synchro peut prendre du temps sur une grosse bibliothèque : `POST
+/api/plex/sync` répond immédiatement (202) et lance le travail en tâche de
+fond via `after()` (Next.js), pendant que `Household.plexSyncStatus/
+plexSyncTotal/plexSyncImported` sont mis à jour au fil de l'import. Le
+composant `PlexConnect` sonde `GET /api/plex/status` pour afficher une barre
+de progression plutôt qu'un simple spinner bloquant.
+
 ## Prochaines étapes (v1+)
 
 - **v1** : remplacer les films "découverte" en dur par une vraie pioche TMDB

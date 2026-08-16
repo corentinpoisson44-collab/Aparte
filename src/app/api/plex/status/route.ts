@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getDefaultHousehold } from "@/lib/household";
-import { MovieSource, PlexSyncStatus } from "@/generated/prisma/client";
+import { MovieSource } from "@/generated/prisma/client";
 
 export async function GET() {
   const household = await getDefaultHousehold();
@@ -17,11 +17,5 @@ export async function GET() {
     serverName: household.plexServerName,
     lastSyncedAt: household.plexLastSyncedAt,
     moviesCount,
-    sync: {
-      syncing: household.plexSyncStatus === PlexSyncStatus.RUNNING,
-      imported: household.plexSyncImported,
-      total: household.plexSyncTotal,
-      error: household.plexSyncStatus === PlexSyncStatus.ERROR ? household.plexSyncError : null,
-    },
   });
 }

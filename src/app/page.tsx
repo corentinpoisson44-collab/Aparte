@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileGate } from "@/components/ProfileGate";
 import { PlexConnect } from "@/components/PlexConnect";
+import { SourceSelector } from "@/components/SourceSelector";
 
 export default function Home() {
   const router = useRouter();
@@ -79,6 +80,7 @@ export default function Home() {
             </div>
 
             <PlexConnect />
+            <SourceSelector />
           </div>
         )}
       </ProfileGate>

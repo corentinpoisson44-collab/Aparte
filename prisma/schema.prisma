@@ -31,6 +31,11 @@ model Household {
   plexServerAccessToken String?
   plexLastSyncedAt      DateTime?
 
+  // Sources activées (cases à cocher : Plex + plateformes de streaming) pour
+  // filtrer les films piochés. Toutes activées par défaut. Voir
+  // src/lib/sources.ts pour la liste connue.
+  enabledSources String[] @default(["Plex", "Netflix", "Disney+", "Amazon Prime Video", "Canal+", "Apple TV+", "Max", "Paramount+"])
+
   createdAt DateTime @default(now())
 }
 

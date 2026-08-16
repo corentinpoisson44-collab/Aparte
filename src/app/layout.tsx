@@ -35,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
             <Link
               href="/history"
-              className="text-xs font-medium uppercase tracking-[0.15em] text-ink/50 hover:text-ink"
+              className="text-xs font-medium uppercase tracking-[0.15em] text-ink/50 transition-colors hover:text-ink"
             >
               Historique
             </Link>

@@ -5,7 +5,7 @@ import type { MovieDTO, MovieScoreDTO } from "@/lib/types";
 import { formatRuntime } from "@/lib/format";
 
 const COUNTDOWN_START = 3;
-const TICK_MS = 550;
+const TICK_MS = 1300;
 
 export function ResultReveal({
   movies,
@@ -44,32 +44,42 @@ export function ResultReveal({
 
   return (
     <div>
-      <div className="-mx-4 flex min-h-[70vh] flex-col items-center justify-center bg-ink px-6 py-16 text-paper sm:mx-0">
+      <div className="-mx-4 flex min-h-[70vh] flex-col items-center justify-center overflow-hidden bg-ink px-6 py-16 text-paper sm:mx-0">
         {!revealed ? (
           <>
-            <p className="mb-6 text-xs uppercase tracking-[0.3em] text-paper/50">
-              Aparté révèle…
+            <p className="mb-6 animate-fade-in text-xs uppercase tracking-[0.3em] text-paper/50">
+              Aparté choisit pour vous…
             </p>
             <span
               key={count}
-              className="font-display text-[7rem] leading-none text-accent"
+              className="animate-count-pop font-display text-[7rem] leading-none text-accent"
             >
               {count > 0 ? count : "—"}
             </span>
           </>
         ) : (
           <div className="flex w-full max-w-xs flex-col items-center text-center">
-            <p className="mb-4 text-xs uppercase tracking-[0.3em] text-paper/50">
-              Vous allez regarder
+            <p
+              className="mb-4 animate-fade-in-up text-xs uppercase tracking-[0.3em] text-paper/50"
+            >
+              Ce soir, vous regardez
             </p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={winner.posterUrl}
               alt={winner.title}
-              className="mb-5 h-72 w-48 object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
+              className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
             />
-            <h2 className="font-display text-2xl">{winner.title}</h2>
-            <p className="mt-1 text-sm text-paper/50">
+            <h2
+              className="animate-fade-in-up font-display text-2xl"
+              style={{ animationDelay: "150ms" }}
+            >
+              {winner.title}
+            </h2>
+            <p
+              className="mt-1 animate-fade-in-up text-sm text-paper/50"
+              style={{ animationDelay: "220ms" }}
+            >
               {winner.year} · {formatRuntime(winner.runtimeMin)}
             </p>
           </div>
@@ -77,24 +87,24 @@ export function ResultReveal({
       </div>
 
       {revealed && (
-        <div className="px-1 py-5">
+        <div className="animate-fade-in-up px-1 py-5" style={{ animationDelay: "280ms" }}>
           <button
             onClick={markWatched}
             disabled={markedWatched}
-            className="w-full rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-colors hover:bg-accent disabled:opacity-50"
+            className="w-full rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-all duration-150 hover:bg-accent active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
           >
-            {markedWatched ? "Marqué comme vu ✓" : "Marquer comme vu"}
+            {markedWatched ? "Marqué comme vu ✓" : "On l'a vu"}
           </button>
 
           <button
             onClick={() => setShowDetails((v) => !v)}
-            className="mt-4 w-full text-center text-sm text-ink/50 hover:text-ink"
+            className="mt-4 w-full text-center text-sm text-ink/50 transition-colors hover:text-ink"
           >
-            {showDetails ? "Masquer le détail" : "Voir le détail du calcul"}
+            {showDetails ? "Masquer" : "Voir comment on a choisi"}
           </button>
 
           {showDetails && (
-            <ul className="mt-3 flex flex-col border-t border-ink/10">
+            <ul className="mt-3 flex animate-fade-in-up flex-col border-t border-ink/10">
               {sortedScores.map((s) => {
                 const movie = byId.get(s.movieId);
                 if (!movie) return null;
@@ -107,7 +117,8 @@ export function ResultReveal({
                       {movie.title}
                     </span>
                     <span className="text-ink/50">
-                      {s.points} pts{s.disqualified ? " · disqualifié (dernier)" : ""}
+                      {s.points} point{s.points > 1 ? "s" : ""}
+                      {s.disqualified ? " · écarté (dernier pour l'un de vous)" : ""}
                     </span>
                   </li>
                 );

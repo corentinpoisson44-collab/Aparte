@@ -26,7 +26,7 @@ export function MovieCard({
   return (
     <div
       onClick={() => setExpanded((v) => !v)}
-      className="flex cursor-pointer items-stretch gap-4 border-b border-ink/10 bg-paper py-3"
+      className="flex cursor-pointer items-stretch gap-4 border-b border-ink/10 bg-paper py-3 transition-colors hover:bg-ink/[0.025]"
     >
       {rank !== undefined && (
         <div className="flex w-9 shrink-0 items-start justify-center pt-1 font-display text-3xl leading-none text-ink/25">
@@ -79,7 +79,7 @@ export function MovieCard({
             onPointerDown={(e) => e.stopPropagation()}
             disabled={!canMoveUp}
             aria-label="Monter dans le classement"
-            className="flex h-9 w-9 items-center justify-center rounded-sm border border-ink/15 text-ink/50 disabled:opacity-30 active:bg-ink/5"
+            className="flex h-9 w-9 items-center justify-center rounded-sm border border-ink/15 text-ink/50 transition-all duration-150 disabled:opacity-30 active:scale-95 active:bg-ink/5"
           >
             ▲
           </button>
@@ -92,7 +92,7 @@ export function MovieCard({
             onPointerDown={(e) => e.stopPropagation()}
             disabled={!canMoveDown}
             aria-label="Descendre dans le classement"
-            className="flex h-9 w-9 items-center justify-center rounded-sm border border-ink/15 text-ink/50 disabled:opacity-30 active:bg-ink/5"
+            className="flex h-9 w-9 items-center justify-center rounded-sm border border-ink/15 text-ink/50 transition-all duration-150 disabled:opacity-30 active:scale-95 active:bg-ink/5"
           >
             ▼
           </button>

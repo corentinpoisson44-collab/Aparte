@@ -29,7 +29,7 @@ export function useMember() {
       } catch {
         if (cancelled) return;
         setError(
-          "Impossible de charger les profils. La base de données est peut-être vide (pas encore seedée)."
+          "Impossible de charger vos profils pour le moment. Réessayez dans un instant."
         );
       } finally {
         if (!cancelled) setLoading(false);

@@ -30,7 +30,7 @@ export default function SessionPage() {
       const data = await fetchSession(code);
       if (cancelled) return;
       if (!data) {
-        setError("Session introuvable.");
+        setError("On ne trouve pas cette session — vérifie le code.");
       } else {
         setSession(data);
       }
@@ -44,10 +44,10 @@ export default function SessionPage() {
   }, [code]);
 
   if (error) {
-    return <p className="p-6 text-center text-ink/50">{error}</p>;
+    return <p className="animate-fade-in p-6 text-center text-ink/50">{error}</p>;
   }
   if (!session) {
-    return <p className="p-6 text-center text-ink/50">Chargement…</p>;
+    return <p className="animate-fade-in p-6 text-center text-ink/50">Un instant…</p>;
   }
 
   return (
@@ -70,13 +70,13 @@ export default function SessionPage() {
               });
               if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                alert(data.error ?? "Erreur lors de l'envoi du classement.");
+                alert(data.error ?? "Ton classement n'a pas pu être envoyé, réessaie.");
                 return;
               }
               const data = await fetchSession(code);
               if (data) setSession(data);
             } catch {
-              alert("Erreur réseau, réessaie.");
+              alert("Petit souci de connexion — réessaie.");
             } finally {
               setSubmitting(false);
             }
@@ -121,12 +121,13 @@ export default function SessionPage() {
 
           if (hasSubmitted) {
             return (
-              <div className="py-16 text-center">
+              <div className="animate-fade-in-up py-16 text-center">
                 <p className="font-display text-xl">
-                  Classement envoyé, {currentName} !
+                  C&apos;est noté, {currentName} !
                 </p>
                 <p className="mt-2 text-ink/50">
-                  En attente de {waitingOn.map((m) => m.name).join(", ")}…
+                  On attend {waitingOn.map((m) => m.name).join(", ")}, plus
+                  que ça…
                 </p>
                 {waitingOn.length > 0 && (
                   <TestSimulatePartner
@@ -139,7 +140,7 @@ export default function SessionPage() {
           }
 
           return (
-            <>
+            <div className="animate-fade-in-up">
               <ShareCode code={code} />
               <RankingBoard
                 movies={session.movies}
@@ -152,7 +153,7 @@ export default function SessionPage() {
                   onSimulate={simulateOtherMember}
                 />
               )}
-            </>
+            </div>
           );
         }}
       </ProfileGate>
@@ -204,28 +205,31 @@ function ShareCode({ code }: { code: string }) {
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
           }}
-          className="flex-1 px-3 py-2 text-center text-sm text-ink/50"
+          className="flex-1 px-3 py-2 text-center text-sm text-ink/50 transition-transform active:scale-[0.99]"
         >
-          Code de session :{" "}
+          Code à partager :{" "}
           <span className="font-display text-lg tracking-[0.2em] text-ink">
             {code}
           </span>
           {" — "}
-          {copied ? "copié !" : "toucher pour copier"}
+          <span className={copied ? "animate-fade-in text-accent" : ""}>
+            {copied ? "copié !" : "toucher pour copier"}
+          </span>
         </button>
         <button
           onClick={() => setShowQr((v) => !v)}
           aria-label="Afficher le QR code de partage"
           aria-expanded={showQr}
-          className="shrink-0 rounded-sm border border-ink/15 px-3 py-2 text-sm text-ink/50 active:bg-ink/5"
+          className="shrink-0 rounded-sm border border-ink/15 px-3 py-2 text-sm text-ink/50 transition-all duration-150 active:scale-95 active:bg-ink/5"
         >
           📱 QR code
         </button>
       </div>
       {showQr && (
-        <div className="flex flex-col items-center gap-2 border-t border-dashed border-ink/15 p-4">
+        <div className="flex animate-fade-in-up flex-col items-center gap-2 border-t border-dashed border-ink/15 p-4">
           <p className="text-center text-sm text-ink/50">
-            Fais scanner ce code à ton/ta partenaire pour qu&apos;iel rejoigne la session
+            Fais scanner ce code à ton/ta partenaire pour qu&apos;iel te
+            rejoigne
           </p>
           {sessionUrl && (
             <div className="border border-ink/15 bg-paper p-3">

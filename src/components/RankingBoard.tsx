@@ -25,6 +25,7 @@ import type { MovieDTO } from "@/lib/types";
 function SortableMovie({
   movie,
   rank,
+  index,
   canMoveUp,
   canMoveDown,
   onMoveUp,
@@ -32,6 +33,7 @@ function SortableMovie({
 }: {
   movie: MovieDTO;
   rank: number;
+  index: number;
   canMoveUp: boolean;
   canMoveDown: boolean;
   onMoveUp: () => void;
@@ -39,18 +41,24 @@ function SortableMovie({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: movie.id });
+  // L'entrée en fondu joue une fois au montage puis se retire : après ça,
+  // seul le style inline de dnd-kit contrôle transform/opacity, sinon
+  // l'animation (fill-mode both) écraserait le retour visuel du drag.
+  const [entering, setEntering] = useState(true);
 
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      onAnimationEnd={() => setEntering(false)}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
+        animationDelay: entering ? `${index * 45}ms` : undefined,
       }}
-      className="cursor-grab active:cursor-grabbing"
+      className={`cursor-grab active:cursor-grabbing ${entering ? "animate-fade-in" : ""}`}
     >
       <MovieCard
         movie={movie}
@@ -107,9 +115,9 @@ export function RankingBoard({
 
   return (
     <div>
-      <p className="mb-4 text-sm text-ink/50">
-        Glisse une carte (n&apos;importe où dessus) pour la réordonner, du
-        plus envie (1) au moins envie (5). Ou utilise les flèches ▲▼.
+      <p className="mb-4 animate-fade-in-up text-sm text-ink/50">
+        Fais glisser les films pour les classer, du plus envie (1) au moins
+        envie (5) — ou utilise les flèches ▲▼.
       </p>
       <DndContext
         sensors={sensors}
@@ -126,6 +134,7 @@ export function RankingBoard({
                   key={id}
                   movie={movie}
                   rank={index + 1}
+                  index={index}
                   canMoveUp={index > 0}
                   canMoveDown={index < order.length - 1}
                   onMoveUp={() => moveMovie(id, "up")}
@@ -139,9 +148,9 @@ export function RankingBoard({
       <button
         onClick={() => onSubmit(order)}
         disabled={submitting}
-        className="mt-6 w-full rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-colors hover:bg-accent disabled:opacity-50"
+        className="mt-6 w-full rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-all duration-150 hover:bg-accent active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
       >
-        {submitting ? "Envoi…" : "Valider mon classement"}
+        {submitting ? "On envoie…" : "Valider mon classement"}
       </button>
     </div>
   );

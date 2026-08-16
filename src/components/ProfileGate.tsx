@@ -14,23 +14,23 @@ export function ProfileGate({
   const { members, memberId, currentMember, setMemberId, loading, error } = useMember();
 
   if (loading) {
-    return <p className="p-6 text-ink/50">Chargement…</p>;
+    return <p className="animate-fade-in p-6 text-ink/50">Un instant…</p>;
   }
 
   if (error) {
-    return <p className="p-6 text-center text-accent">{error}</p>;
+    return <p className="animate-fade-in p-6 text-center text-accent">{error}</p>;
   }
 
   if (!memberId || !currentMember) {
     return (
-      <div className="mx-auto max-w-sm p-6">
+      <div className="mx-auto max-w-sm animate-fade-in-up p-6">
         <h2 className="mb-4 font-display text-lg">Qui es-tu ?</h2>
         <div className="flex flex-col gap-2">
           {members?.map((m) => (
             <button
               key={m.id}
               onClick={() => setMemberId(m.id)}
-              className="rounded-sm border border-ink/20 bg-paper px-4 py-3 text-left font-display text-lg hover:border-ink"
+              className="rounded-sm border border-ink/20 bg-paper px-4 py-3 text-left font-display text-lg transition-all duration-150 hover:border-ink active:scale-[0.99]"
             >
               {m.name}
             </button>

@@ -25,7 +25,7 @@ export function SourceSelector() {
         setAvailable(data.available);
         setEnabled(new Set(data.enabled));
       } catch {
-        if (!cancelled) setError("Impossible de charger les sources.");
+        if (!cancelled) setError("Impossible de charger tes plateformes pour le moment.");
       }
     }
     load();
@@ -50,7 +50,7 @@ export function SourceSelector() {
       });
       if (!res.ok) throw new Error();
     } catch {
-      setError("Erreur réseau, la sélection n'a peut-être pas été sauvegardée.");
+      setError("Petit souci de connexion, ton choix n'a peut-être pas été enregistré.");
     } finally {
       setSaving(false);
     }
@@ -59,18 +59,22 @@ export function SourceSelector() {
   if (!available) return null;
 
   return (
-    <div className="rounded-sm border border-ink/15 p-4">
+    <div
+      className="animate-fade-in-up rounded-sm border border-ink/15 p-4"
+      style={{ animationDelay: "60ms" }}
+    >
       <h2 className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-ink/50">
-        Sources
+        Vos plateformes
       </h2>
       <p className="mb-3 text-sm text-ink/60">
-        Choisis les sources dans lesquelles piocher des films.
+        Coche celles où vous avez l&apos;habitude de regarder, pour que les
+        films proposés soient ceux que vous pouvez vraiment lancer ce soir.
       </p>
       <div className="grid grid-cols-2 gap-2">
         {available.map((source) => (
           <label
             key={source}
-            className="flex items-center gap-2 rounded-sm border border-ink/15 px-3 py-2 text-sm"
+            className="flex items-center gap-2 rounded-sm border border-ink/15 px-3 py-2 text-sm transition-colors has-[:checked]:border-ink/40"
           >
             <input
               type="checkbox"
@@ -83,7 +87,7 @@ export function SourceSelector() {
           </label>
         ))}
       </div>
-      {error && <p className="mt-2 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-2 animate-fade-in text-sm text-accent">{error}</p>}
     </div>
   );
 }

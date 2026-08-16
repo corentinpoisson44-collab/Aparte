@@ -20,23 +20,29 @@ export default function HistoryPage() {
   }, []);
 
   if (!sessions) {
-    return <p className="p-6 text-center text-ink/50">Chargement…</p>;
+    return <p className="animate-fade-in p-6 text-center text-ink/50">Un instant…</p>;
   }
 
   if (sessions.length === 0) {
     return (
-      <p className="p-6 text-center text-ink/50">
-        Aucune session terminée pour le moment.
+      <p className="animate-fade-in p-6 text-center text-ink/50">
+        Pas encore de soirée film ensemble — lancez votre première session !
       </p>
     );
   }
 
   return (
     <div className="mx-auto max-w-md px-4 py-8">
-      <h1 className="mb-6 font-display text-2xl">Historique</h1>
+      <h1 className="mb-6 animate-fade-in-up font-display text-2xl">
+        Vos soirées
+      </h1>
       <ul className="flex flex-col border-t border-ink/10">
-        {sessions.map((s) => (
-          <li key={s.code} className="flex gap-4 border-b border-ink/10 py-4">
+        {sessions.map((s, index) => (
+          <li
+            key={s.code}
+            className="flex animate-fade-in-up gap-4 border-b border-ink/10 py-4"
+            style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
+          >
             {s.winnerMovie && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -51,8 +57,7 @@ export default function HistoryPage() {
                   day: "numeric",
                   month: "short",
                   year: "numeric",
-                })}{" "}
-                · {s.code}
+                })}
               </p>
               <p className="truncate font-display text-lg">
                 {s.winnerMovie?.title ?? "—"}
@@ -61,9 +66,7 @@ export default function HistoryPage() {
                 )}
               </p>
               <p className="mt-1 text-xs text-ink/50">
-                {s.rankings
-                  .map((r) => `${r.memberName} : ${r.order.length} films classés`)
-                  .join(" · ")}
+                Classé par {s.rankings.map((r) => r.memberName).join(" et ")}
               </p>
             </div>
           </li>

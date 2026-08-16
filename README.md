@@ -14,17 +14,30 @@ sortir de sa zone de confort.
 ## Stack (v0)
 
 - **Next.js 16** (App Router, TypeScript, Tailwind CSS v4)
-- **Prisma 7** + **SQLite** en local (driver adapter `@prisma/adapter-better-sqlite3`)
+- **Prisma 7** + **Postgres (Neon)**, via l'adapter HTTP `@prisma/adapter-neon`
+  (une requête = un appel HTTPS, pas de connexion persistante — adapté aux
+  fonctions serverless de Vercel)
 - **@dnd-kit** pour le classement en glisser-déposer (souris, tactile, clavier)
 - Pas d'authentification en v0 : un seul foyer (2 profils fixes), choisi une
   fois par appareil (mémorisé en `localStorage`)
+
+## Déploiement (Vercel + Neon)
+
+1. Dans le projet Vercel : **Storage → Create Database → Neon**, puis
+   *Connect* au projet — Vercel ajoute automatiquement `DATABASE_URL` (et
+   variantes) en variable d'environnement.
+2. Le script `build` (`prisma migrate deploy && next build`) applique les
+   migrations à chaque déploiement : rien à faire manuellement.
+3. Le foyer et les 15 films mock ne sont pas seedés automatiquement en prod
+   — lancer `npm run db:seed` une fois en local avec la même `DATABASE_URL`
+   (voir ci-dessous), ou depuis la console SQL de Neon.
 
 ## Démarrage local
 
 ```bash
 npm install
-cp .env.example .env      # DATABASE_URL="file:./dev.db"
-npm run db:migrate        # crée la base SQLite locale
+cp .env.example .env      # colle la DATABASE_URL Postgres (Neon) ici
+npm run db:migrate        # applique les migrations
 npm run db:seed           # foyer "Corentin / Partenaire" + 15 films mock
 npm run dev
 ```
@@ -33,19 +46,10 @@ Ouvrir http://localhost:3000, choisir un profil, créer une session, partager
 le code à 5 caractères, classer les films sur le deuxième appareil/onglet
 avec l'autre profil.
 
-## ⚠️ Avant de déployer sur Vercel
-
-SQLite (fichier local) **ne fonctionne pas** sur les fonctions serverless de
-Vercel (système de fichiers éphémère). Avant de déployer :
-
-1. Provisionner une base Postgres (Vercel Postgres ou Neon).
-2. Changer `provider = "sqlite"` en `provider = "postgresql"` dans
-   `prisma/schema.prisma`.
-3. Remplacer l'adapter `@prisma/adapter-better-sqlite3` par
-   `@prisma/adapter-pg` dans `src/lib/prisma.ts` et `prisma/seed.ts`.
-4. Définir `DATABASE_URL` dans les variables d'environnement Vercel.
-5. Lancer `npx prisma migrate deploy` contre la base de prod, puis le seed
-   si besoin.
+⚠️ `src/lib/prisma.ts` utilise l'adapter HTTP de Neon (`PrismaNeonHttp`), qui
+ne supporte pas les transactions interactives (callback `$transaction(async
+tx => ...)`) — seulement les transactions en lot (`$transaction([...])`),
+seule forme utilisée dans ce projet.
 
 ## Modèle de données
 

@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // v0: un seul foyer (couple) avec exactement 2 membres, pas d'authentification.

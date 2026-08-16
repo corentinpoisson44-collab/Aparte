@@ -88,13 +88,24 @@ export default function SessionPage() {
             const shuffled = [...session.movies.map((m) => m.id)].sort(
               () => Math.random() - 0.5
             );
-            await fetch(`/api/sessions/${code}/rank`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ memberId: otherId, order: shuffled }),
-            });
-            const data = await fetchSession(code);
-            if (data) setSession(data);
+            try {
+              const res = await fetch(`/api/sessions/${code}/rank`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ memberId: otherId, order: shuffled }),
+              });
+              if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                alert(
+                  data.error ?? "Erreur lors de la simulation du partenaire."
+                );
+                return;
+              }
+              const data = await fetchSession(code);
+              if (data) setSession(data);
+            } catch {
+              alert("Erreur réseau pendant la simulation.");
+            }
           };
 
           if (session.status === "REVEALED" && session.result) {
@@ -148,8 +159,8 @@ export default function SessionPage() {
   );
 }
 
-// Visible uniquement hors production : permet de simuler le classement
-// du·des autre·s membre·s du foyer pour tester le flux à un seul appareil.
+// Outil de test : simule le classement du·des autre·s membre·s du foyer
+// pour tester le flux à un seul appareil (y compris sur un déploiement).
 function TestSimulatePartner({
   others,
   onSimulate,
@@ -157,7 +168,6 @@ function TestSimulatePartner({
   others: Member[];
   onSimulate: (memberId: string) => void;
 }) {
-  if (process.env.NODE_ENV === "production") return null;
   return (
     <div className="mt-6 rounded-lg border border-dashed border-amber-400 bg-amber-50 p-3 text-sm">
       <p className="mb-2 text-amber-800">Outil de test — simuler un choix :</p>

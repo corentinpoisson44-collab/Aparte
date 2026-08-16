@@ -62,11 +62,21 @@ sentir, l'adapter WebSocket les supporte (contrairement au mode HTTP).
 
 ## Modèle de données
 
-`Household` (foyer) → `Member` (2 profils) ; `Movie` (catalogue, source
-`PLEX`/`DISCOVERY`) ; `Session` (code, statut) → `SessionMovie` (les 5 films
-piochés) → `Ranking` (classement par membre) → `SessionResult` (gagnant +
-détail des scores) ; `WatchHistory` (vu / proposé / rejeté-dernier, sert à
-ne pas reproposer un film déjà vu ou trop souvent rejeté).
+`Household` (foyer, dont les sources activées `enabledSources`) → `Member` (2
+profils) ; `Movie` (catalogue, source `PLEX`/`DISCOVERY`, plateforme
+`platform`) ; `Session` (code, statut) → `SessionMovie` (les 5 films piochés)
+→ `Ranking` (classement par membre) → `SessionResult` (gagnant + détail des
+scores) ; `WatchHistory` (vu / proposé / rejeté-dernier, sert à ne pas
+reproposer un film déjà vu ou trop souvent rejeté).
+
+## Sources
+
+Sur la page d'accueil, des cases à cocher (Plex, Netflix, Disney+, Amazon
+Prime Video, Canal+, Apple TV+, Max, Paramount+) permettent de choisir les
+sources dans lesquelles piocher : `src/lib/draw.ts` ne propose que les films
+dont la plateforme (`Movie.platform`) est cochée. Toutes activées par défaut.
+Voir `src/lib/sources.ts` pour la liste connue et
+`src/components/SourceSelector.tsx` pour l'UI.
 
 ## Algorithme de sélection
 

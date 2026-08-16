@@ -16,6 +16,11 @@ function pickRandom<T>(items: T[], count: number): T[] {
  * en excluant les films déjà vus et ceux rejetés en dernier trop souvent.
  */
 export async function drawMoviesForHousehold(householdId: string) {
+  const household = await prisma.household.findUniqueOrThrow({
+    where: { id: householdId },
+    select: { enabledSources: true },
+  });
+
   const watchHistory = await prisma.watchHistory.findMany({
     where: { householdId },
     select: { movieId: true, status: true },
@@ -42,7 +47,10 @@ export async function drawMoviesForHousehold(householdId: string) {
   const isEligible = (movieId: string) =>
     !watchedIds.has(movieId) && !overRejectedIds.has(movieId);
 
-  const allMovies = await prisma.movie.findMany({ where: { householdId } });
+  const enabledSources = new Set(household.enabledSources);
+  const allMovies = (
+    await prisma.movie.findMany({ where: { householdId } })
+  ).filter((m) => enabledSources.has(m.platform));
   const plexPool = allMovies.filter(
     (m) => m.source === MovieSource.PLEX && isEligible(m.id)
   );

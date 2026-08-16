@@ -17,6 +17,7 @@ const mockMovies: Array<{
   year: number;
   synopsis: string;
   runtimeMin: number;
+  genre: string;
   platform: string;
   source: MovieSource;
   slug: string;
@@ -28,6 +29,7 @@ const mockMovies: Array<{
     synopsis:
       "Une fillette de dix ans, en instance de déménagement, s'égare avec ses parents dans un monde parallèle peuplé d'esprits.",
     runtimeMin: 125,
+    genre: "Animation, Fantastique",
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "chihiro",
@@ -38,6 +40,7 @@ const mockMovies: Array<{
     synopsis:
       "Un nouveau blade runner découvre un secret enfoui depuis longtemps qui a le potentiel de plonger ce qu'il reste de la société dans le chaos.",
     runtimeMin: 164,
+    genre: "Science-fiction",
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "blade-runner-2049",
@@ -48,6 +51,7 @@ const mockMovies: Array<{
     synopsis:
       "Toute la famille de Ki-taek est au chômage. Elle s'intéresse particulièrement au train de vie de la richissime famille Park.",
     runtimeMin: 132,
+    genre: "Thriller, Drame",
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "parasite",
@@ -58,6 +62,7 @@ const mockMovies: Array<{
     synopsis:
       "Dans un désert post-apocalyptique, Max rejoint une rebelle en fuite pour échapper à un tyran et à son armée.",
     runtimeMin: 120,
+    genre: "Action, Science-fiction",
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "mad-max-fury-road",
@@ -68,6 +73,7 @@ const mockMovies: Array<{
     synopsis:
       "Un jeune batteur de jazz intègre un conservatoire réputé et se heurte à un professeur tyrannique déterminé à révéler son potentiel.",
     runtimeMin: 107,
+    genre: "Drame, Musique",
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "whiplash",
@@ -78,6 +84,7 @@ const mockMovies: Array<{
     synopsis:
       "Les aventures de Gustave H., concierge légendaire d'un célèbre hôtel européen, et de Zero Moustafa, le jeune groom devenu son plus fidèle ami.",
     runtimeMin: 100,
+    genre: "Comédie, Aventure",
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "grand-budapest-hotel",
@@ -88,6 +95,7 @@ const mockMovies: Array<{
     synopsis:
       "Une équipe d'explorateurs voyage à travers un trou de ver dans l'espace pour tenter d'assurer la survie de l'humanité.",
     runtimeMin: 169,
+    genre: "Science-fiction, Drame",
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "interstellar",
@@ -98,6 +106,7 @@ const mockMovies: Array<{
     synopsis:
       "France, 1770. Marianne, peintre, est chargée de réaliser le portrait de mariage d'Héloïse sans que celle-ci ne pose.",
     runtimeMin: 122,
+    genre: "Drame, Romance",
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "portrait-jeune-fille-feu",
@@ -109,6 +118,7 @@ const mockMovies: Array<{
     synopsis:
       "Une femme d'origine chinoise doit se connecter à des versions parallèles d'elle-même pour empêcher la destruction du multivers.",
     runtimeMin: 140,
+    genre: "Science-fiction, Comédie",
     platform: "Netflix",
     source: MovieSource.DISCOVERY,
     slug: "everything-everywhere",
@@ -119,6 +129,7 @@ const mockMovies: Array<{
     synopsis:
       "Paul Atreides, jeune homme brillant, doit se rendre sur la planète la plus dangereuse de l'univers pour assurer l'avenir de sa famille et de son peuple.",
     runtimeMin: 155,
+    genre: "Science-fiction, Aventure",
     platform: "Disney+",
     source: MovieSource.DISCOVERY,
     slug: "dune",
@@ -129,6 +140,7 @@ const mockMovies: Array<{
     synopsis:
       "Une actrice en devenir et un musicien de jazz tombent amoureux tout en essayant de concilier leurs carrières respectives à Los Angeles.",
     runtimeMin: 128,
+    genre: "Comédie musicale, Romance",
     platform: "Netflix",
     source: MovieSource.DISCOVERY,
     slug: "la-la-land",
@@ -139,6 +151,7 @@ const mockMovies: Array<{
     synopsis:
       "Après le meurtre d'un patriarche de la littérature policière, un détective enquête sur chaque membre de la famille pour trouver le meurtrier.",
     runtimeMin: 130,
+    genre: "Policier, Comédie",
     platform: "Amazon Prime Video",
     source: MovieSource.DISCOVERY,
     slug: "knives-out",
@@ -149,6 +162,7 @@ const mockMovies: Array<{
     synopsis:
       "Miles Morales devient Spider-Man et rejoint des héros venus d'univers parallèles pour sauver le multivers.",
     runtimeMin: 117,
+    genre: "Animation, Action",
     platform: "Netflix",
     source: MovieSource.DISCOVERY,
     slug: "spiderverse",
@@ -159,6 +173,7 @@ const mockMovies: Array<{
     synopsis:
       "Les habitants d'un petit village de pêcheurs tentent de convaincre un jeune médecin de s'y installer pour sauver leur économie locale.",
     runtimeMin: 113,
+    genre: "Comédie",
     platform: "Amazon Prime Video",
     source: MovieSource.DISCOVERY,
     slug: "grand-seduction",
@@ -169,6 +184,7 @@ const mockMovies: Array<{
     synopsis:
       "Un professeur de musique dont l'âme se retrouve séparée de son corps découvre ce qui rend vraiment la vie digne d'être vécue.",
     runtimeMin: 100,
+    genre: "Animation, Fantastique",
     platform: "Disney+",
     source: MovieSource.DISCOVERY,
     slug: "soul",
@@ -199,6 +215,7 @@ async function main() {
         year: m.year,
         synopsis: m.synopsis,
         runtimeMin: m.runtimeMin,
+        genre: m.genre,
         platform: m.platform,
         source: m.source,
         posterUrl: placeholderPoster(m.title),

@@ -20,6 +20,9 @@ export function PlexConnect() {
   const [status, setStatus] = useState<PlexStatus | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{ imported: number; total: number } | null>(
+    null
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -106,19 +109,51 @@ export function PlexConnect() {
     setSyncing(true);
     setError(null);
     setMessage(null);
+    setSyncProgress(null);
+    let sawDone = false;
+    let sawError = false;
     try {
       const res = await fetch("/api/plex/sync", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Échec de la synchronisation Plex.");
-        return;
+      if (!res.body) throw new Error();
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, newlineIndex).trim();
+          buffer = buffer.slice(newlineIndex + 1);
+          if (!line) continue;
+
+          const event = JSON.parse(line);
+          if (event.type === "progress") {
+            setSyncProgress({ imported: event.imported, total: event.total });
+          } else if (event.type === "done") {
+            sawDone = true;
+            setMessage(`${event.imported} film(s) importé(s) depuis "${event.serverName}".`);
+          } else if (event.type === "error") {
+            sawError = true;
+            setError(event.error ?? "Échec de la synchronisation Plex.");
+          }
+        }
       }
-      setMessage(`${data.imported} film(s) importé(s) depuis "${data.serverName}".`);
-      await loadStatus();
+
+      if (sawDone) {
+        await loadStatus();
+      } else if (!sawError) {
+        setError("Synchronisation interrompue, réessaie.");
+      }
     } catch {
       setError("Erreur réseau pendant la synchronisation.");
     } finally {
       setSyncing(false);
+      setSyncProgress(null);
     }
   }
 
@@ -165,15 +200,40 @@ export function PlexConnect() {
               disabled={syncing}
               className="flex-1 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
-              {syncing ? "Synchronisation…" : "Synchroniser ma bibliothèque"}
+              {syncing
+                ? syncProgress && syncProgress.total > 0
+                  ? `Synchronisation… ${syncProgress.imported}/${syncProgress.total}`
+                  : "Synchronisation…"
+                : "Synchroniser ma bibliothèque"}
             </button>
             <button
               onClick={disconnect}
-              className="shrink-0 rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium"
+              disabled={syncing}
+              className="shrink-0 rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium disabled:opacity-50"
             >
               Déconnecter
             </button>
           </div>
+          {syncing && (
+            <div
+              role="progressbar"
+              aria-label="Progression de la synchronisation Plex"
+              aria-valuemin={0}
+              aria-valuemax={syncProgress?.total ?? undefined}
+              aria-valuenow={syncProgress?.imported}
+              className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-200"
+            >
+              <div
+                className="h-full rounded-full bg-stone-900 transition-all duration-300"
+                style={{
+                  width:
+                    syncProgress && syncProgress.total > 0
+                      ? `${Math.min(100, Math.round((syncProgress.imported / syncProgress.total) * 100))}%`
+                      : "15%",
+                }}
+              />
+            </div>
+          )}
         </>
       )}
 

@@ -5,6 +5,7 @@ import { MovieSource } from "@/generated/prisma/client";
 import { isServerResource, listResources, resolveReachableConnection } from "./discovery";
 import { fetchSectionMovies, listMovieSections, plexPosterUrl } from "./library";
 import { placeholderPoster } from "@/lib/poster-placeholder";
+import type { PlexMovie } from "./types";
 
 export class PlexNotConnectedError extends Error {}
 export class PlexServerUnreachableError extends Error {}
@@ -68,7 +69,17 @@ export async function discoverServer(household: Household) {
   };
 }
 
-export async function syncPlexLibrary(household: Household) {
+function plexGenreLabel(movie: PlexMovie): string {
+  if (!movie.Genre || movie.Genre.length === 0) return "";
+  return movie.Genre.slice(0, 2)
+    .map((g) => g.tag)
+    .join(", ");
+}
+
+export async function syncPlexLibrary(
+  household: Household,
+  onProgress?: (imported: number, total: number) => void
+) {
   const clientId = await ensurePlexClientId(household);
   const server = await discoverServer({ ...household, plexClientId: clientId });
 
@@ -79,45 +90,49 @@ export async function syncPlexLibrary(household: Household) {
     );
   }
 
-  let imported = 0;
+  const movies: PlexMovie[] = [];
   for (const section of sections) {
-    const movies = await fetchSectionMovies(
-      server.baseUrl,
-      clientId,
-      server.accessToken,
-      section.key
+    movies.push(
+      ...(await fetchSectionMovies(server.baseUrl, clientId, server.accessToken, section.key))
     );
+  }
 
-    for (const movie of movies) {
-      await prisma.movie.upsert({
-        where: {
-          householdId_plexKey: { householdId: household.id, plexKey: movie.ratingKey },
-        },
-        update: {
-          title: movie.title,
-          year: movie.year ?? 0,
-          synopsis: movie.summary ?? "",
-          runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
-          posterUrl: movie.thumb
-            ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
-            : placeholderPoster(movie.title),
-        },
-        create: {
-          householdId: household.id,
-          plexKey: movie.ratingKey,
-          title: movie.title,
-          year: movie.year ?? 0,
-          synopsis: movie.summary ?? "",
-          runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
-          posterUrl: movie.thumb
-            ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
-            : placeholderPoster(movie.title),
-          platform: "Plex",
-          source: MovieSource.PLEX,
-        },
-      });
-      imported++;
-    }
+  const total = movies.length;
+  let imported = 0;
+  onProgress?.(imported, total);
+
+  for (const movie of movies) {
+    await prisma.movie.upsert({
+      where: {
+        householdId_plexKey: { householdId: household.id, plexKey: movie.ratingKey },
+      },
+      update: {
+        title: movie.title,
+        year: movie.year ?? 0,
+        synopsis: movie.summary ?? "",
+        runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
+        genre: plexGenreLabel(movie),
+        posterUrl: movie.thumb
+          ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
+          : placeholderPoster(movie.title),
+      },
+      create: {
+        householdId: household.id,
+        plexKey: movie.ratingKey,
+        title: movie.title,
+        year: movie.year ?? 0,
+        synopsis: movie.summary ?? "",
+        runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
+        genre: plexGenreLabel(movie),
+        posterUrl: movie.thumb
+          ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
+          : placeholderPoster(movie.title),
+        platform: "Plex",
+        source: MovieSource.PLEX,
+      },
+    });
+    imported++;
+    onProgress?.(imported, total);
   }
 
   await prisma.household.update({

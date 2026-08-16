@@ -62,6 +62,7 @@ model Movie {
   posterUrl   String
   synopsis    String
   runtimeMin  Int
+  genre       String   @default("")
   platform    String // ex: "Plex", "Netflix", "Disney+"
   source      MovieSource
 

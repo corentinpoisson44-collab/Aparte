@@ -37,4 +37,5 @@ export type PlexMovie = {
   summary?: string;
   thumb?: string;
   duration?: number; // ms
+  Genre?: { tag: string }[];
 };

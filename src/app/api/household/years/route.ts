@@ -14,11 +14,15 @@ export async function GET() {
     select: { year: true },
   });
 
-  if (movies.length === 0) {
+  // year = 0 est la valeur posée quand Plex ne fournit pas de métadonnée
+  // d'année (voir src/lib/plex/sync.ts) : ce n'est pas une vraie date de
+  // sortie, elle fausserait les bornes vers l'an 0.
+  const years = movies.map((m) => m.year).filter((y) => y > 0);
+
+  if (years.length === 0) {
     const currentYear = new Date().getFullYear();
     return NextResponse.json({ min: currentYear - 50, max: currentYear });
   }
 
-  const years = movies.map((m) => m.year);
   return NextResponse.json({ min: Math.min(...years), max: Math.max(...years) });
 }

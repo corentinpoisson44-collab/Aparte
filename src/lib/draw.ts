@@ -17,6 +17,8 @@ export type DrawFilters = {
   duration?: "short" | "long" | "any";
   genre?: string | null;
   origin?: "library" | "discovery" | "any";
+  yearMin?: number | null;
+  yearMax?: number | null;
 };
 
 function pickRandom<T>(items: T[], count: number): T[] {
@@ -25,7 +27,7 @@ function pickRandom<T>(items: T[], count: number): T[] {
 }
 
 function matchesFilters(
-  movie: { runtimeMin: number; genre: string; source: MovieSource },
+  movie: { runtimeMin: number; genre: string; source: MovieSource; year: number },
   filters: DrawFilters
 ): boolean {
   if (filters.duration === "short" && movie.runtimeMin > SHORT_MAX_RUNTIME) {
@@ -44,6 +46,12 @@ function matchesFilters(
     return false;
   }
   if (filters.origin === "discovery" && movie.source !== MovieSource.DISCOVERY) {
+    return false;
+  }
+  if (filters.yearMin != null && movie.year < filters.yearMin) {
+    return false;
+  }
+  if (filters.yearMax != null && movie.year > filters.yearMax) {
     return false;
   }
   return true;

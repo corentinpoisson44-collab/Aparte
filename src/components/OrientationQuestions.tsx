@@ -16,9 +16,16 @@ const ORIGIN_OPTIONS = [
 
 type Duration = (typeof DURATION_OPTIONS)[number]["value"];
 type Origin = (typeof ORIGIN_OPTIONS)[number]["value"];
-type Answers = { duration: Duration; genre: string | null; origin: Origin };
+type Answers = {
+  duration: Duration;
+  genre: string | null;
+  origin: Origin;
+  yearMin: number | null;
+  yearMax: number | null;
+};
+type YearBounds = { min: number; max: number };
 
-const STEP_COUNT = 3;
+const STEP_COUNT = 4;
 /** Pause pour laisser voir la sélection avant de passer à l'écran suivant. */
 const ADVANCE_DELAY_MS = 220;
 
@@ -40,11 +47,15 @@ export function OrientationQuestions({
   onCancel: () => void;
 }) {
   const [genres, setGenres] = useState<string[]>([]);
+  const [yearBounds, setYearBounds] = useState<YearBounds | null>(null);
+  const [yearRange, setYearRange] = useState<[number, number] | null>(null);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>({
     duration: "any",
     genre: null,
     origin: "any",
+    yearMin: null,
+    yearMax: null,
   });
   const [picked, setPicked] = useState<string | null>(null);
   const [drawing, setDrawing] = useState(false);
@@ -56,6 +67,22 @@ export function OrientationQuestions({
       .then((res) => (res.ok ? res.json() : { genres: [] }))
       .then((data: { genres?: string[] }) => {
         if (!cancelled) setGenres(data.genres ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/household/years")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: YearBounds | null) => {
+        if (!cancelled && data) {
+          setYearBounds(data);
+          setYearRange([data.min, data.max]);
+        }
       })
       .catch(() => {});
     return () => {
@@ -106,6 +133,22 @@ export function OrientationQuestions({
       setPicked(null);
       setStep(2);
     }, ADVANCE_DELAY_MS);
+  }
+
+  function confirmYearRange() {
+    if (!yearBounds || !yearRange) return;
+    const [from, to] = yearRange;
+    // Curseur laissé sur toute l'étendue disponible = pas de contrainte,
+    // même sémantique que "peu importe" pour les autres questions.
+    const yearMin = from <= yearBounds.min ? null : from;
+    const yearMax = to >= yearBounds.max ? null : to;
+    setAnswers((a) => ({ ...a, yearMin, yearMax }));
+    setStep(3);
+  }
+
+  function skipYearRange() {
+    setAnswers((a) => ({ ...a, yearMin: null, yearMax: null }));
+    setStep(3);
   }
 
   function pickOrigin(value: Origin) {
@@ -161,6 +204,7 @@ export function OrientationQuestions({
           options={DURATION_OPTIONS}
           picked={picked}
           onPick={pickDuration}
+          onSkip={() => pickDuration("any")}
         />
       )}
       {step === 1 && (
@@ -170,15 +214,31 @@ export function OrientationQuestions({
           options={genreOptions}
           picked={picked}
           onPick={pickGenre}
+          onSkip={() => pickGenre("any")}
         />
       )}
-      {step === 2 && (
+      {step === 2 &&
+        (yearBounds && yearRange ? (
+          <YearRangeQuestion
+            bounds={yearBounds}
+            value={yearRange}
+            onChange={setYearRange}
+            onConfirm={confirmYearRange}
+            onSkip={skipYearRange}
+          />
+        ) : (
+          <div className="flex animate-fade-in-up flex-col gap-4">
+            <p className="text-ink/60">Côté date de sortie…</p>
+          </div>
+        ))}
+      {step === 3 && (
         <QuestionScreen
           stepKey="origin"
           subtitle="Ce soir, plutôt…"
           options={ORIGIN_OPTIONS}
           picked={picked}
           onPick={pickOrigin}
+          onSkip={() => pickOrigin("any")}
           loading={drawing}
           loadingLabel="On pioche…"
         />
@@ -196,6 +256,7 @@ function QuestionScreen<T extends string>({
   options,
   picked,
   onPick,
+  onSkip,
   loading,
   loadingLabel,
 }: {
@@ -205,6 +266,7 @@ function QuestionScreen<T extends string>({
   options: readonly { value: T; label: string }[];
   picked: string | null;
   onPick: (value: T) => void;
+  onSkip?: () => void;
   loading?: boolean;
   loadingLabel?: string;
 }) {
@@ -232,6 +294,96 @@ function QuestionScreen<T extends string>({
       {loading && (
         <p className="animate-fade-in text-sm text-ink/50">{loadingLabel}</p>
       )}
+      {onSkip && <SkipButton onSkip={onSkip} disabled={loading} />}
+    </div>
+  );
+}
+
+/** Bouton discret pour passer une question sans y répondre ni filtrer dessus. */
+function SkipButton({
+  onSkip,
+  disabled,
+}: {
+  onSkip: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSkip}
+      disabled={disabled}
+      className="self-start text-sm text-ink/40 underline-offset-4 transition-colors hover:text-ink/70 hover:underline disabled:opacity-40"
+    >
+      Passer cette question
+    </button>
+  );
+}
+
+function YearRangeQuestion({
+  bounds,
+  value,
+  onChange,
+  onConfirm,
+  onSkip,
+}: {
+  bounds: YearBounds;
+  value: [number, number];
+  onChange: (value: [number, number]) => void;
+  onConfirm: () => void;
+  onSkip: () => void;
+}) {
+  const [from, to] = value;
+  const singleYear = bounds.min === bounds.max;
+
+  return (
+    <div key="year" className="flex animate-fade-in-up flex-col gap-4">
+      <p className="text-ink/60">Côté date de sortie, entre…</p>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between">
+            <label htmlFor="year-from" className="text-sm text-ink/50">
+              À partir de
+            </label>
+            <span className="font-display text-lg">{from}</span>
+          </div>
+          <input
+            id="year-from"
+            type="range"
+            min={bounds.min}
+            max={bounds.max}
+            value={from}
+            disabled={singleYear}
+            onChange={(e) => onChange([Math.min(Number(e.target.value), to), to])}
+            className="accent-ink disabled:opacity-40"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between">
+            <label htmlFor="year-to" className="text-sm text-ink/50">
+              Jusqu&apos;à
+            </label>
+            <span className="font-display text-lg">{to}</span>
+          </div>
+          <input
+            id="year-to"
+            type="range"
+            min={bounds.min}
+            max={bounds.max}
+            value={to}
+            disabled={singleYear}
+            onChange={(e) => onChange([from, Math.max(Number(e.target.value), from)])}
+            className="accent-ink disabled:opacity-40"
+          />
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onConfirm}
+        className="rounded-sm border border-ink bg-ink px-4 py-3 text-left font-display text-lg text-paper transition-all duration-150 active:scale-[0.99]"
+      >
+        Continuer
+      </button>
+      <SkipButton onSkip={onSkip} />
     </div>
   );
 }

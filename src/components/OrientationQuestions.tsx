@@ -16,9 +16,16 @@ const ORIGIN_OPTIONS = [
 
 type Duration = (typeof DURATION_OPTIONS)[number]["value"];
 type Origin = (typeof ORIGIN_OPTIONS)[number]["value"];
-type Answers = { duration: Duration; genre: string | null; origin: Origin };
+type Answers = {
+  duration: Duration;
+  genre: string | null;
+  origin: Origin;
+  yearMin: number | null;
+  yearMax: number | null;
+};
+type YearBounds = { min: number; max: number };
 
-const STEP_COUNT = 3;
+const STEP_COUNT = 4;
 /** Pause pour laisser voir la sélection avant de passer à l'écran suivant. */
 const ADVANCE_DELAY_MS = 220;
 
@@ -40,11 +47,14 @@ export function OrientationQuestions({
   onCancel: () => void;
 }) {
   const [genres, setGenres] = useState<string[]>([]);
+  const [yearBounds, setYearBounds] = useState<YearBounds | null>(null);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>({
     duration: "any",
     genre: null,
     origin: "any",
+    yearMin: null,
+    yearMax: null,
   });
   const [picked, setPicked] = useState<string | null>(null);
   const [drawing, setDrawing] = useState(false);
@@ -56,6 +66,19 @@ export function OrientationQuestions({
       .then((res) => (res.ok ? res.json() : { genres: [] }))
       .then((data: { genres?: string[] }) => {
         if (!cancelled) setGenres(data.genres ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/household/years")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: YearBounds | null) => {
+        if (!cancelled && data) setYearBounds(data);
       })
       .catch(() => {});
     return () => {
@@ -108,6 +131,20 @@ export function OrientationQuestions({
     }, ADVANCE_DELAY_MS);
   }
 
+  function pickDecade(value: string) {
+    setPicked(value);
+    const decade = value === "any" ? null : Number(value);
+    setAnswers((a) => ({
+      ...a,
+      yearMin: decade,
+      yearMax: decade === null ? null : decade + 9,
+    }));
+    window.setTimeout(() => {
+      setPicked(null);
+      setStep(3);
+    }, ADVANCE_DELAY_MS);
+  }
+
   function pickOrigin(value: Origin) {
     setPicked(value);
     const finalAnswers = { ...answers, origin: value };
@@ -127,6 +164,14 @@ export function OrientationQuestions({
 
   const genreOptions = [
     ...genres.map((g) => ({ value: g, label: g })),
+    { value: "any", label: "Peu importe" },
+  ];
+
+  const yearOptions = [
+    ...decadesInRange(yearBounds).map((d) => ({
+      value: String(d),
+      label: `${d} - ${d + 9}`,
+    })),
     { value: "any", label: "Peu importe" },
   ];
 
@@ -161,6 +206,7 @@ export function OrientationQuestions({
           options={DURATION_OPTIONS}
           picked={picked}
           onPick={pickDuration}
+          onSkip={() => pickDuration("any")}
         />
       )}
       {step === 1 && (
@@ -170,15 +216,27 @@ export function OrientationQuestions({
           options={genreOptions}
           picked={picked}
           onPick={pickGenre}
+          onSkip={() => pickGenre("any")}
         />
       )}
       {step === 2 && (
+        <QuestionScreen
+          stepKey="year"
+          subtitle="Côté date de sortie, plutôt…"
+          options={yearOptions}
+          picked={picked}
+          onPick={pickDecade}
+          onSkip={() => pickDecade("any")}
+        />
+      )}
+      {step === 3 && (
         <QuestionScreen
           stepKey="origin"
           subtitle="Ce soir, plutôt…"
           options={ORIGIN_OPTIONS}
           picked={picked}
           onPick={pickOrigin}
+          onSkip={() => pickOrigin("any")}
           loading={drawing}
           loadingLabel="On pioche…"
         />
@@ -196,6 +254,7 @@ function QuestionScreen<T extends string>({
   options,
   picked,
   onPick,
+  onSkip,
   loading,
   loadingLabel,
 }: {
@@ -205,6 +264,7 @@ function QuestionScreen<T extends string>({
   options: readonly { value: T; label: string }[];
   picked: string | null;
   onPick: (value: T) => void;
+  onSkip?: () => void;
   loading?: boolean;
   loadingLabel?: string;
 }) {
@@ -232,6 +292,41 @@ function QuestionScreen<T extends string>({
       {loading && (
         <p className="animate-fade-in text-sm text-ink/50">{loadingLabel}</p>
       )}
+      {onSkip && <SkipButton onSkip={onSkip} disabled={loading} />}
     </div>
   );
+}
+
+/** Bouton discret pour passer une question sans y répondre ni filtrer dessus. */
+function SkipButton({
+  onSkip,
+  disabled,
+}: {
+  onSkip: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSkip}
+      disabled={disabled}
+      className="self-start text-sm text-ink/40 underline-offset-4 transition-colors hover:text-ink/70 hover:underline disabled:opacity-40"
+    >
+      Passer cette question
+    </button>
+  );
+}
+
+/**
+ * Décennies couvrant le catalogue du foyer, de la plus récente à la plus
+ * ancienne (ex : 2020, 2010, …), pour proposer des tranches façon
+ * "2020 - 2029" plutôt qu'un curseur libre.
+ */
+function decadesInRange(bounds: YearBounds | null): number[] {
+  if (!bounds) return [];
+  const latest = Math.floor(bounds.max / 10) * 10;
+  const earliest = Math.floor(bounds.min / 10) * 10;
+  const decades: number[] = [];
+  for (let d = latest; d >= earliest; d -= 10) decades.push(d);
+  return decades;
 }

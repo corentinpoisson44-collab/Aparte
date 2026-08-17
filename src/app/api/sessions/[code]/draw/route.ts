@@ -3,12 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { drawMoviesForHousehold, type DrawFilters } from "@/lib/draw";
 import { WatchStatus } from "@/generated/prisma/client";
 
+function parseYear(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 function parseFilters(body: unknown): DrawFilters {
   const b = (body ?? {}) as Record<string, unknown>;
   return {
     duration: b.duration === "short" || b.duration === "long" ? b.duration : "any",
     genre: typeof b.genre === "string" && b.genre.trim() ? b.genre.trim() : null,
     origin: b.origin === "library" || b.origin === "discovery" ? b.origin : "any",
+    yearMin: parseYear(b.yearMin),
+    yearMax: parseYear(b.yearMax),
   };
 }
 

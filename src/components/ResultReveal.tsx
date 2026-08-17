@@ -27,6 +27,7 @@ export function ResultReveal({
   const [showDetails, setShowDetails] = useState(false);
   const [markedWatched, setMarkedWatched] = useState(false);
   const [clients, setClients] = useState<PlexPlayerClient[] | null>(null);
+  const [clientsError, setClientsError] = useState<string | null>(null);
   const [launching, setLaunching] = useState<string | null>(null);
   const [launchMessage, setLaunchMessage] = useState<string | null>(null);
   const [launchError, setLaunchError] = useState<string | null>(null);
@@ -50,11 +51,16 @@ export function ResultReveal({
     let cancelled = false;
     fetch("/api/plex/clients")
       .then((res) => (res.ok ? res.json() : { clients: [] }))
-      .then((data: { clients?: PlexPlayerClient[] }) => {
-        if (!cancelled) setClients(data.clients ?? []);
+      .then((data: { clients?: PlexPlayerClient[]; error?: string }) => {
+        if (cancelled) return;
+        setClients(data.clients ?? []);
+        setClientsError(data.error ?? null);
       })
       .catch(() => {
-        if (!cancelled) setClients([]);
+        if (!cancelled) {
+          setClients([]);
+          setClientsError("Impossible de chercher un lecteur Plex pour le moment.");
+        }
       });
     return () => {
       cancelled = true;
@@ -137,20 +143,27 @@ export function ResultReveal({
 
       {revealed && (
         <div className="animate-fade-in-up px-1 py-5" style={{ animationDelay: "280ms" }}>
-          {clients && clients.length > 0 && (
+          {clients && (
             <div className="mb-3 flex flex-col gap-2">
-              {clients.map((c) => (
-                <button
-                  key={c.machineIdentifier}
-                  onClick={() => launchOnClient(c.machineIdentifier)}
-                  disabled={launching !== null}
-                  className="w-full rounded-sm border border-ink bg-paper px-4 py-3 font-medium text-ink transition-all duration-150 hover:bg-ink hover:text-paper active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-                >
-                  {launching === c.machineIdentifier
-                    ? "Lancement…"
-                    : `▶ Lancer sur ${c.name}`}
-                </button>
-              ))}
+              {clients.length > 0 ? (
+                clients.map((c) => (
+                  <button
+                    key={c.machineIdentifier}
+                    onClick={() => launchOnClient(c.machineIdentifier)}
+                    disabled={launching !== null}
+                    className="w-full rounded-sm border border-ink bg-paper px-4 py-3 font-medium text-ink transition-all duration-150 hover:bg-ink hover:text-paper active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+                  >
+                    {launching === c.machineIdentifier
+                      ? "Lancement…"
+                      : `▶ Lancer sur ${c.name}`}
+                  </button>
+                ))
+              ) : (
+                <p className="text-center text-sm text-ink/40">
+                  {clientsError ??
+                    "Aucun lecteur Plex trouvé — ouvre l'appli Plex sur ta TV (avec le même compte) pour pouvoir lancer la lecture depuis ici."}
+                </p>
+              )}
               {launchMessage && (
                 <p className="animate-fade-in text-center text-sm text-ink/70">{launchMessage}</p>
               )}

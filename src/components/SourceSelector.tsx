@@ -11,6 +11,7 @@ type SourcesResponse = { available: string[]; enabled: string[] };
 export function SourceSelector() {
   const [available, setAvailable] = useState<string[] | null>(null);
   const [enabled, setEnabled] = useState<Set<string>>(new Set());
+  const [tmdbConfigured, setTmdbConfigured] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,12 +19,16 @@ export function SourceSelector() {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch("/api/household/sources");
-        if (!res.ok) throw new Error();
-        const data: SourcesResponse = await res.json();
+        const [sourcesRes, tmdbRes] = await Promise.all([
+          fetch("/api/household/sources"),
+          fetch("/api/tmdb/status"),
+        ]);
+        if (!sourcesRes.ok) throw new Error();
+        const data: SourcesResponse = await sourcesRes.json();
         if (cancelled) return;
         setAvailable(data.available);
         setEnabled(new Set(data.enabled));
+        if (tmdbRes.ok) setTmdbConfigured((await tmdbRes.json()).configured);
       } catch {
         if (!cancelled) setError("Impossible de charger tes plateformes pour le moment.");
       }
@@ -71,22 +76,32 @@ export function SourceSelector() {
         films proposés soient ceux que vous pouvez vraiment lancer ce soir.
       </p>
       <div className="grid grid-cols-2 gap-2">
-        {available.map((source) => (
-          <label
-            key={source}
-            className="flex items-center gap-2 rounded-sm border border-ink/15 px-3 py-2 text-sm transition-colors has-[:checked]:border-ink/40"
-          >
-            <input
-              type="checkbox"
-              checked={enabled.has(source)}
-              onChange={() => toggle(source)}
-              disabled={saving}
-              className="h-4 w-4 shrink-0 accent-accent"
-            />
-            {source}
-          </label>
-        ))}
+        {available.map((source) => {
+          const disconnected = source !== "Plex" && !tmdbConfigured;
+          return (
+            <label
+              key={source}
+              title={disconnected ? "Nécessite la synchro du catalogue TMDB ci-dessus." : undefined}
+              className="flex items-center gap-2 rounded-sm border border-ink/15 px-3 py-2 text-sm transition-colors has-[:checked]:border-ink/40 has-[:disabled]:opacity-40"
+            >
+              <input
+                type="checkbox"
+                checked={enabled.has(source)}
+                onChange={() => toggle(source)}
+                disabled={saving || disconnected}
+                className="h-4 w-4 shrink-0 accent-accent"
+              />
+              {source}
+            </label>
+          );
+        })}
       </div>
+      {!tmdbConfigured && (
+        <p className="mt-2 text-sm text-ink/50">
+          Les plateformes hors Plex nécessitent une synchro du catalogue
+          TMDB pour proposer des films (voir ci-dessus).
+        </p>
+      )}
       {error && <p className="mt-2 animate-fade-in text-sm text-accent">{error}</p>}
     </div>
   );

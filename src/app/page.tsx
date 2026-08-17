@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileGate } from "@/components/ProfileGate";
 import { PlexConnect } from "@/components/PlexConnect";
+import { TmdbConnect } from "@/components/TmdbConnect";
 import { SourceSelector } from "@/components/SourceSelector";
 import { OrientationQuestions } from "@/components/OrientationQuestions";
 
@@ -98,6 +99,7 @@ export default function Home() {
               </div>
 
               <PlexConnect />
+              <TmdbConnect />
               <SourceSelector />
             </div>
           )

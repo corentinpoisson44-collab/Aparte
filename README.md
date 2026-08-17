@@ -12,8 +12,8 @@ sortir de sa zone de confort.
    ci-dessous.
 2. L'app pioche 5 films en tenant compte de ces préférences : 3 "Plex"
    (bibliothèque personnelle, une fois connectée — sinon les mocks seedés) +
-   2 "découverte" simulés en dur (la vraie intégration TMDB arrive en v1,
-   voir plus bas).
+   2 "découverte" (catalogue streaming réel via TMDB, voir "Intégration
+   TMDB" plus bas — aucun film tant que ce n'est pas connecté).
 3. Chaque personne classe ces 5 films indépendamment sur son écran.
 4. Une fois les deux classements soumis, l'app révèle le film gagnant,
    calculé par un Borda count avec garde-fou anti-rejet.
@@ -81,8 +81,11 @@ Sur la page d'accueil, des cases à cocher (Plex, Netflix, Disney+, Amazon
 Prime Video, Canal+, Apple TV+, Max, Paramount+) permettent de choisir les
 sources dans lesquelles piocher : `src/lib/draw.ts` ne propose que les films
 dont la plateforme (`Movie.platform`) est cochée. Toutes activées par défaut.
-Voir `src/lib/sources.ts` pour la liste connue et
-`src/components/SourceSelector.tsx` pour l'UI.
+Chaque plateforme nécessite une connexion pour effectivement récupérer des
+films (Plex : compte lié + bibliothèque synchronisée ; les autres :
+catalogue TMDB synchronisé, voir "Intégration TMDB" plus bas) — sans quoi
+sa case est désactivée, faute de films à proposer. Voir `src/lib/sources.ts`
+pour la liste connue et `src/components/SourceSelector.tsx` pour l'UI.
 
 ## Questions d'orientation
 
@@ -120,14 +123,29 @@ les films de ses bibliothèques de type "movie" dans la table `Movie`
 `src/lib/plex/` pour le détail (aucune clé d'API Plex à fournir : le flow PIN
 n'en nécessite pas).
 
-## Prochaines étapes (v1+)
+## Intégration TMDB (v1)
 
-- **v1** : remplacer les films "découverte" en dur par une vraie pioche TMDB
-  (providers de streaming filtrés sur les abonnements).
+Chaque plateforme de streaming (Netflix, Disney+, Amazon Prime Video,
+Canal+, Apple TV+, Max, Paramount+) nécessite une connexion pour proposer
+des films : contrairement à Plex, il n'y a pas de compte à lier par
+plateforme (aucune n'expose d'API publique pour ça), mais une clé
+`TMDB_API_KEY` côté serveur (v3 ou jeton de lecture v4, gratuits sur
+themoviedb.org) donne accès au catalogue de streaming de toutes les
+plateformes via l'API "watch providers" de TMDB. Tant qu'elle n'est pas
+configurée, ces plateformes ne renvoient aucun film au tirage — la carte
+"Catalogue streaming" de la page d'accueil l'indique, et leurs cases à
+cocher dans "Vos plateformes" sont désactivées.
+
+Une fois la clé configurée, "Mettre à jour le catalogue" interroge
+`/discover/movie` pour chaque plateforme (filtré par fournisseur et région
+FR), puis `/movie/{id}` pour le détail de chaque film, et importe le tout
+dans `Movie` (`source = DISCOVERY`, `tmdbId` renseigné), en amont du tirage
+`src/lib/draw.ts`. Un même film disponible sur plusieurs plateformes garde
+la première rencontrée (le modèle ne porte qu'une plateforme par film).
+Voir `src/lib/tmdb/`.
+
+## Prochaines étapes (v2+)
+
 - **v2** : ratio Plex/découverte configurable, choix manuel du serveur/de la
   bibliothèque Plex si plusieurs sont disponibles.
 - **v3** : vrais comptes (magic link), historique enrichi, mobile polish.
-
-### Ce qu'il faudra fournir pour la v1
-
-- **TMDB** : une clé API (gratuite, themoviedb.org).

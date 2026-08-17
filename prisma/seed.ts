@@ -111,84 +111,10 @@ const mockMovies: Array<{
     source: MovieSource.PLEX,
     slug: "portrait-jeune-fille-feu",
   },
-  // Découverte (hors bibliothèque, streaming)
-  {
-    title: "Everything Everywhere All at Once",
-    year: 2022,
-    synopsis:
-      "Une femme d'origine chinoise doit se connecter à des versions parallèles d'elle-même pour empêcher la destruction du multivers.",
-    runtimeMin: 140,
-    genre: "Science-fiction, Comédie",
-    platform: "Netflix",
-    source: MovieSource.DISCOVERY,
-    slug: "everything-everywhere",
-  },
-  {
-    title: "Dune",
-    year: 2021,
-    synopsis:
-      "Paul Atreides, jeune homme brillant, doit se rendre sur la planète la plus dangereuse de l'univers pour assurer l'avenir de sa famille et de son peuple.",
-    runtimeMin: 155,
-    genre: "Science-fiction, Aventure",
-    platform: "Disney+",
-    source: MovieSource.DISCOVERY,
-    slug: "dune",
-  },
-  {
-    title: "La La Land",
-    year: 2016,
-    synopsis:
-      "Une actrice en devenir et un musicien de jazz tombent amoureux tout en essayant de concilier leurs carrières respectives à Los Angeles.",
-    runtimeMin: 128,
-    genre: "Comédie musicale, Romance",
-    platform: "Netflix",
-    source: MovieSource.DISCOVERY,
-    slug: "la-la-land",
-  },
-  {
-    title: "Knives Out",
-    year: 2019,
-    synopsis:
-      "Après le meurtre d'un patriarche de la littérature policière, un détective enquête sur chaque membre de la famille pour trouver le meurtrier.",
-    runtimeMin: 130,
-    genre: "Policier, Comédie",
-    platform: "Amazon Prime Video",
-    source: MovieSource.DISCOVERY,
-    slug: "knives-out",
-  },
-  {
-    title: "Spider-Man: Into the Spider-Verse",
-    year: 2018,
-    synopsis:
-      "Miles Morales devient Spider-Man et rejoint des héros venus d'univers parallèles pour sauver le multivers.",
-    runtimeMin: 117,
-    genre: "Animation, Action",
-    platform: "Netflix",
-    source: MovieSource.DISCOVERY,
-    slug: "spiderverse",
-  },
-  {
-    title: "The Grand Seduction",
-    year: 2013,
-    synopsis:
-      "Les habitants d'un petit village de pêcheurs tentent de convaincre un jeune médecin de s'y installer pour sauver leur économie locale.",
-    runtimeMin: 113,
-    genre: "Comédie",
-    platform: "Amazon Prime Video",
-    source: MovieSource.DISCOVERY,
-    slug: "grand-seduction",
-  },
-  {
-    title: "Soul",
-    year: 2020,
-    synopsis:
-      "Un professeur de musique dont l'âme se retrouve séparée de son corps découvre ce qui rend vraiment la vie digne d'être vécue.",
-    runtimeMin: 100,
-    genre: "Animation, Fantastique",
-    platform: "Disney+",
-    source: MovieSource.DISCOVERY,
-    slug: "soul",
-  },
+  // Les films "découverte" (Netflix, Disney+, etc.) ne sont plus seedés en
+  // dur : ils viennent du vrai catalogue TMDB, voir src/lib/tmdb/sync.ts et
+  // "Mettre à jour le catalogue" sur la page d'accueil (nécessite
+  // TMDB_API_KEY).
 ];
 
 async function main() {

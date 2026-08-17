@@ -36,6 +36,13 @@ model Household {
   // src/lib/sources.ts pour la liste connue.
   enabledSources String[] @default(["Plex", "Netflix", "Disney+", "Amazon Prime Video", "Canal+", "Apple TV+", "Max", "Paramount+"])
 
+  // Catalogue TMDB (v1) : une seule clé API `TMDB_API_KEY` côté serveur
+  // suffit à interroger le catalogue de toutes les plateformes de streaming
+  // (endpoint "watch providers"), pas de connexion par plateforme. Tant
+  // qu'aucune synchronisation n'a eu lieu, ces plateformes ne renvoient
+  // aucun film au tirage.
+  tmdbLastSyncedAt DateTime?
+
   createdAt DateTime @default(now())
 }
 
@@ -77,6 +84,7 @@ model Movie {
   createdAt DateTime @default(now())
 
   @@unique([householdId, plexKey])
+  @@unique([householdId, tmdbId])
   @@index([householdId])
 }
 

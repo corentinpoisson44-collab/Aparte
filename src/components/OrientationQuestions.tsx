@@ -48,7 +48,6 @@ export function OrientationQuestions({
 }) {
   const [genres, setGenres] = useState<string[]>([]);
   const [yearBounds, setYearBounds] = useState<YearBounds | null>(null);
-  const [yearRange, setYearRange] = useState<[number, number] | null>(null);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>({
     duration: "any",
@@ -79,10 +78,7 @@ export function OrientationQuestions({
     fetch("/api/household/years")
       .then((res) => (res.ok ? res.json() : null))
       .then((data: YearBounds | null) => {
-        if (!cancelled && data) {
-          setYearBounds(data);
-          setYearRange([data.min, data.max]);
-        }
+        if (!cancelled && data) setYearBounds(data);
       })
       .catch(() => {});
     return () => {
@@ -135,20 +131,18 @@ export function OrientationQuestions({
     }, ADVANCE_DELAY_MS);
   }
 
-  function confirmYearRange() {
-    if (!yearBounds || !yearRange) return;
-    const [from, to] = yearRange;
-    // Curseur laissé sur toute l'étendue disponible = pas de contrainte,
-    // même sémantique que "peu importe" pour les autres questions.
-    const yearMin = from <= yearBounds.min ? null : from;
-    const yearMax = to >= yearBounds.max ? null : to;
-    setAnswers((a) => ({ ...a, yearMin, yearMax }));
-    setStep(3);
-  }
-
-  function skipYearRange() {
-    setAnswers((a) => ({ ...a, yearMin: null, yearMax: null }));
-    setStep(3);
+  function pickDecade(value: string) {
+    setPicked(value);
+    const decade = value === "any" ? null : Number(value);
+    setAnswers((a) => ({
+      ...a,
+      yearMin: decade,
+      yearMax: decade === null ? null : decade + 9,
+    }));
+    window.setTimeout(() => {
+      setPicked(null);
+      setStep(3);
+    }, ADVANCE_DELAY_MS);
   }
 
   function pickOrigin(value: Origin) {
@@ -170,6 +164,14 @@ export function OrientationQuestions({
 
   const genreOptions = [
     ...genres.map((g) => ({ value: g, label: g })),
+    { value: "any", label: "Peu importe" },
+  ];
+
+  const yearOptions = [
+    ...decadesInRange(yearBounds).map((d) => ({
+      value: String(d),
+      label: `${d} - ${d + 9}`,
+    })),
     { value: "any", label: "Peu importe" },
   ];
 
@@ -217,20 +219,16 @@ export function OrientationQuestions({
           onSkip={() => pickGenre("any")}
         />
       )}
-      {step === 2 &&
-        (yearBounds && yearRange ? (
-          <YearRangeQuestion
-            bounds={yearBounds}
-            value={yearRange}
-            onChange={setYearRange}
-            onConfirm={confirmYearRange}
-            onSkip={skipYearRange}
-          />
-        ) : (
-          <div className="flex animate-fade-in-up flex-col gap-4">
-            <p className="text-ink/60">Côté date de sortie…</p>
-          </div>
-        ))}
+      {step === 2 && (
+        <QuestionScreen
+          stepKey="year"
+          subtitle="Côté date de sortie, plutôt…"
+          options={yearOptions}
+          picked={picked}
+          onPick={pickDecade}
+          onSkip={() => pickDecade("any")}
+        />
+      )}
       {step === 3 && (
         <QuestionScreen
           stepKey="origin"
@@ -319,71 +317,16 @@ function SkipButton({
   );
 }
 
-function YearRangeQuestion({
-  bounds,
-  value,
-  onChange,
-  onConfirm,
-  onSkip,
-}: {
-  bounds: YearBounds;
-  value: [number, number];
-  onChange: (value: [number, number]) => void;
-  onConfirm: () => void;
-  onSkip: () => void;
-}) {
-  const [from, to] = value;
-  const singleYear = bounds.min === bounds.max;
-
-  return (
-    <div key="year" className="flex animate-fade-in-up flex-col gap-4">
-      <p className="text-ink/60">Côté date de sortie, entre…</p>
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-baseline justify-between">
-            <label htmlFor="year-from" className="text-sm text-ink/50">
-              À partir de
-            </label>
-            <span className="font-display text-lg">{from}</span>
-          </div>
-          <input
-            id="year-from"
-            type="range"
-            min={bounds.min}
-            max={bounds.max}
-            value={from}
-            disabled={singleYear}
-            onChange={(e) => onChange([Math.min(Number(e.target.value), to), to])}
-            className="accent-ink disabled:opacity-40"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-baseline justify-between">
-            <label htmlFor="year-to" className="text-sm text-ink/50">
-              Jusqu&apos;à
-            </label>
-            <span className="font-display text-lg">{to}</span>
-          </div>
-          <input
-            id="year-to"
-            type="range"
-            min={bounds.min}
-            max={bounds.max}
-            value={to}
-            disabled={singleYear}
-            onChange={(e) => onChange([from, Math.max(Number(e.target.value), from)])}
-            className="accent-ink disabled:opacity-40"
-          />
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onConfirm}
-        className="rounded-sm border border-ink bg-ink px-4 py-3 text-left font-display text-lg text-paper transition-all duration-150 active:scale-[0.99]"
-      >
-        Continuer
-      </button>
-      <SkipButton onSkip={onSkip} />
-    </div>
-  );
+/**
+ * Décennies couvrant le catalogue du foyer, de la plus récente à la plus
+ * ancienne (ex : 2020, 2010, …), pour proposer des tranches façon
+ * "2020 - 2029" plutôt qu'un curseur libre.
+ */
+function decadesInRange(bounds: YearBounds | null): number[] {
+  if (!bounds) return [];
+  const latest = Math.floor(bounds.max / 10) * 10;
+  const earliest = Math.floor(bounds.min / 10) * 10;
+  const decades: number[] = [];
+  for (let d = latest; d >= earliest; d -= 10) decades.push(d);
+  return decades;
 }

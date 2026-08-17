@@ -7,16 +7,14 @@ sortir de sa zone de confort.
 
 1. Après avoir créé la session, on répond à quelques questions facultatives
    pour orienter le tirage : durée (court / long / peu importe), ambiance
-   (genre présent dans le catalogue, ou peu importe) et valeur sûre
-   (bibliothèque Plex) vs découverte. Voir "Questions d'orientation"
-   ci-dessous.
-2. L'app pioche 5 films en tenant compte de ces préférences : 3 "Plex"
-   (bibliothèque personnelle, une fois connectée — sinon les mocks seedés) +
-   2 "découverte" simulés en dur (la vraie intégration TMDB arrive en v1,
-   voir plus bas).
+   (genre présent dans le catalogue, ou peu importe). Voir "Questions
+   d'orientation" ci-dessous.
+2. L'app pioche 5 films dans la bibliothèque Plex du foyer (une fois
+   connectée — sinon les mocks seedés) en tenant compte de ces préférences.
 3. Chaque personne classe ces 5 films indépendamment sur son écran.
 4. Une fois les deux classements soumis, l'app révèle le film gagnant,
-   calculé par un Borda count avec garde-fou anti-rejet.
+   calculé par un Borda count avec garde-fou anti-rejet, avec la possibilité
+   de le lancer directement sur un lecteur Plex (TV, box…) du foyer.
 
 ## Stack (v0)
 
@@ -68,21 +66,19 @@ sentir, l'adapter WebSocket les supporte (contrairement au mode HTTP).
 
 ## Modèle de données
 
-`Household` (foyer, dont les sources activées `enabledSources`) → `Member` (2
-profils) ; `Movie` (catalogue, source `PLEX`/`DISCOVERY`, plateforme
-`platform`) ; `Session` (code, statut) → `SessionMovie` (les 5 films piochés)
-→ `Ranking` (classement par membre) → `SessionResult` (gagnant + détail des
-scores) ; `WatchHistory` (vu / proposé / rejeté-dernier, sert à ne pas
-reproposer un film déjà vu ou trop souvent rejeté).
+`Household` (foyer) → `Member` (2 profils) ; `Movie` (catalogue, source
+`PLEX`/`DISCOVERY`, plateforme `platform`) ; `Session` (code, statut) →
+`SessionMovie` (les 5 films piochés) → `Ranking` (classement par membre) →
+`SessionResult` (gagnant + détail des scores) ; `WatchHistory` (vu / proposé
+/ rejeté-dernier, sert à ne pas reproposer un film déjà vu ou trop souvent
+rejeté).
 
 ## Sources
 
-Sur la page d'accueil, des cases à cocher (Plex, Netflix, Disney+, Amazon
-Prime Video, Canal+, Apple TV+, Max, Paramount+) permettent de choisir les
-sources dans lesquelles piocher : `src/lib/draw.ts` ne propose que les films
-dont la plateforme (`Movie.platform`) est cochée. Toutes activées par défaut.
-Voir `src/lib/sources.ts` pour la liste connue et
-`src/components/SourceSelector.tsx` pour l'UI.
+Seule la bibliothèque Plex du foyer est utilisée : `src/lib/draw.ts` ne
+pioche que parmi les films dont la plateforme (`Movie.platform`) vaut
+`"Plex"`. Les autres plateformes (Netflix, Disney+, etc.) ont été
+désactivées — il n'y a plus de sélecteur de sources sur la page d'accueil.
 
 ## Questions d'orientation
 
@@ -119,6 +115,18 @@ les films de ses bibliothèques de type "movie" dans la table `Movie`
 (`source = PLEX`), en amont du tirage `src/lib/draw.ts`. Voir
 `src/lib/plex/` pour le détail (aucune clé d'API Plex à fournir : le flow PIN
 n'en nécessite pas).
+
+### Lancer sur la TV
+
+Une fois le film révélé (`src/components/ResultReveal.tsx`), l'app
+interroge `GET /api/plex/clients` pour lister les lecteurs Plex (TV, box…)
+actuellement annoncés auprès du serveur du foyer, et propose un bouton par
+lecteur trouvé. Cliquer dessus appelle `POST /api/plex/play`, qui envoie
+directement au lecteur (en HTTP local, indépendamment du serveur — c'est
+ainsi que les clients Plex exposent leur contrôle) une commande de lecture
+pour ce film. Voir `src/lib/plex/clients.ts`. Le lecteur doit être allumé,
+sur le même réseau local, et son réglage Plex "Autoriser le contrôle de la
+lecture média" activé.
 
 ## Prochaines étapes (v1+)
 

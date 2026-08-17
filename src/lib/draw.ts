@@ -68,11 +68,6 @@ export async function drawMoviesForHousehold(
   householdId: string,
   filters: DrawFilters = {}
 ) {
-  const household = await prisma.household.findUniqueOrThrow({
-    where: { id: householdId },
-    select: { enabledSources: true },
-  });
-
   const watchHistory = await prisma.watchHistory.findMany({
     where: { householdId },
     select: { movieId: true, status: true },
@@ -99,10 +94,11 @@ export async function drawMoviesForHousehold(
   const isEligible = (movieId: string) =>
     !watchedIds.has(movieId) && !overRejectedIds.has(movieId);
 
-  const enabledSources = new Set(household.enabledSources);
-  const allMovies = (
-    await prisma.movie.findMany({ where: { householdId } })
-  ).filter((m) => enabledSources.has(m.platform));
+  // Plateformes autres que Plex désactivées : on ne pioche que dans la
+  // bibliothèque Plex synchronisée.
+  const allMovies = await prisma.movie.findMany({
+    where: { householdId, platform: "Plex" },
+  });
   const filteredMovies = allMovies.filter((m) => matchesFilters(m, filters));
 
   const plexPool = filteredMovies.filter(

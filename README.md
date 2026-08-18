@@ -6,9 +6,10 @@ sortir de sa zone de confort.
 ## Principe
 
 1. Après avoir créé la session, on répond à quelques questions facultatives
-   pour orienter le tirage : nombre de films (3 / 5 / 7 / 9, 5 par défaut),
-   durée (court / long / peu importe), ambiance (genre présent dans le
-   catalogue, ou peu importe). Voir "Questions d'orientation" ci-dessous.
+   pour orienter le tirage : nombre de films (3 / 5 / 8, 5 par défaut),
+   ambiance (genre présent dans le catalogue, ou peu importe), durée
+   (plutôt court / plutôt long / peu importe). Voir "Questions d'orientation"
+   ci-dessous.
 2. L'app pioche ce nombre de films dans la bibliothèque Plex du foyer (une
    fois connectée — sinon les mocks seedés) en tenant compte de ces
    préférences ; si trop peu de films correspondent, elle complète avec
@@ -91,11 +92,10 @@ désactivées — il n'y a plus de sélecteur de sources sur la page d'accueil.
 
 `POST /api/sessions` crée la session sans tirer de film. La page d'accueil
 enchaîne alors sur `src/components/OrientationQuestions.tsx` : nombre de
-films (3 / 5 / 7 / 9, 5 par défaut), durée (court ≤ 100 min / long / peu
-importe), ambiance (genres distincts du catalogue, récupérés via
-`GET /api/household/genres`, ou peu importe) et valeur sûre (bibliothèque
-Plex) vs découverte. Une fois les réponses envoyées,
-`POST /api/sessions/[code]/draw` appelle `drawMoviesForHousehold` avec ces
+films (3 / 5 / 8, 5 par défaut), ambiance (genres distincts du catalogue,
+récupérés via `GET /api/household/genres`, ou peu importe) et durée
+(plutôt court ≤ 100 min / plutôt long / peu importe). Une fois les réponses
+envoyées, `POST /api/sessions/[code]/draw` appelle `drawMoviesForHousehold` avec ces
 préférences. Le nombre de films est respecté strictement (il détermine
 combien de films sont piochés) ; les autres préférences sont des priorités
 souples, pas des filtres stricts : `src/lib/draw.ts` complète toujours avec

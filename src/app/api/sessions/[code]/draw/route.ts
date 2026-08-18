@@ -20,7 +20,6 @@ function parseFilters(body: unknown): DrawFilters {
   return {
     duration: b.duration === "short" || b.duration === "long" ? b.duration : "any",
     genre: typeof b.genre === "string" && b.genre.trim() ? b.genre.trim() : null,
-    origin: b.origin === "library" || b.origin === "discovery" ? b.origin : "any",
     yearMin: parseYear(b.yearMin),
     yearMax: parseYear(b.yearMax),
     count: parseCount(b.count),
@@ -29,7 +28,7 @@ function parseFilters(body: unknown): DrawFilters {
 
 /**
  * Tire les films d'une session déjà créée, en fonction des réponses aux
- * questions d'orientation (durée, ambiance, valeur sûre vs découverte).
+ * questions d'orientation (nombre de films, ambiance, durée).
  */
 export async function POST(
   request: Request,

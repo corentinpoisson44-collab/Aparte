@@ -11,13 +11,12 @@ const SHORT_MAX_RUNTIME = 100;
 
 /**
  * Préférences facultatives demandées après la création d'une session pour
- * orienter le tirage (durée, ambiance, valeur sûre vs découverte). Toutes
- * facultatives : un tirage sans préférence se comporte comme avant.
+ * orienter le tirage (durée, ambiance). Toutes facultatives : un tirage
+ * sans préférence se comporte comme avant.
  */
 export type DrawFilters = {
   duration?: "short" | "long" | "any";
   genre?: string | null;
-  origin?: "library" | "discovery" | "any";
   yearMin?: number | null;
   yearMax?: number | null;
   /** Nombre de films à proposer (par défaut DEFAULT_COUNT). */
@@ -30,7 +29,7 @@ function pickRandom<T>(items: T[], count: number): T[] {
 }
 
 function matchesFilters(
-  movie: { runtimeMin: number; genre: string; source: MovieSource; year: number },
+  movie: { runtimeMin: number; genre: string; year: number },
   filters: DrawFilters
 ): boolean {
   if (filters.duration === "short" && movie.runtimeMin > SHORT_MAX_RUNTIME) {
@@ -43,12 +42,6 @@ function matchesFilters(
     filters.genre &&
     !movie.genre.toLowerCase().includes(filters.genre.toLowerCase())
   ) {
-    return false;
-  }
-  if (filters.origin === "library" && movie.source !== MovieSource.PLEX) {
-    return false;
-  }
-  if (filters.origin === "discovery" && movie.source !== MovieSource.DISCOVERY) {
     return false;
   }
   if (filters.yearMin != null && movie.year < filters.yearMin) {

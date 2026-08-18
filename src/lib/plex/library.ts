@@ -43,3 +43,13 @@ export async function fetchSectionMovies(
 export function plexPosterUrl(baseUrl: string, serverToken: string, thumb: string): string {
   return `${baseUrl}${thumb}?X-Plex-Token=${encodeURIComponent(serverToken)}`;
 }
+
+/**
+ * Lien "app.plex.tv" vers la fiche d'un film : sur mobile/desktop avec
+ * l'appli Plex installée, l'OS l'ouvre directement dedans (domaine
+ * vérifié par Plex) plutôt que dans un navigateur.
+ */
+export function plexWebUrl(serverId: string, ratingKey: string): string {
+  const key = encodeURIComponent(`/library/metadata/${ratingKey}`);
+  return `https://app.plex.tv/desktop/#!/server/${serverId}/details?key=${key}`;
+}

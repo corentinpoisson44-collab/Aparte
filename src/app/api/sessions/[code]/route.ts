@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { plexWebUrl } from "@/lib/plex/library";
 
 export async function GET(
   _req: Request,
@@ -22,6 +23,7 @@ export async function GET(
   }
 
   const movies = session.sessionMovies.map((sm) => sm.movie);
+  const plexServerId = session.household.plexServerId;
 
   const result = session.result
     ? {
@@ -46,6 +48,7 @@ export async function GET(
       genre: m.genre,
       platform: m.platform,
       source: m.source,
+      plexUrl: plexServerId && m.plexKey ? plexWebUrl(plexServerId, m.plexKey) : null,
     })),
     submittedMemberIds: session.rankings.map((r) => r.memberId),
     result,

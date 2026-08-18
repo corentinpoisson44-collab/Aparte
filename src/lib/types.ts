@@ -10,6 +10,8 @@ export type MovieDTO = {
   genre: string;
   platform: string;
   source: "PLEX" | "DISCOVERY";
+  /** Lien pour ouvrir directement le film dans Plex (app ou web), si disponible. */
+  plexUrl: string | null;
 };
 
 export type MovieScoreDTO = {

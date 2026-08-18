@@ -119,12 +119,34 @@ export function ResultReveal({
             >
               Ce soir, vous regardez
             </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={winner.posterUrl}
-              alt={winner.title}
-              className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
-            />
+            {winner.plexUrl ? (
+              <a
+                href={winner.plexUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mb-1 animate-scale-in"
+                aria-label={`Ouvrir « ${winner.title} » dans Plex`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={winner.posterUrl}
+                  alt={winner.title}
+                  className="h-72 w-48 object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)] transition-opacity active:opacity-80"
+                />
+              </a>
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={winner.posterUrl}
+                alt={winner.title}
+                className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
+              />
+            )}
+            {winner.plexUrl && (
+              <p className="mb-4 animate-fade-in text-xs text-paper/40">
+                Toucher l&apos;affiche pour l&apos;ouvrir dans Plex
+              </p>
+            )}
             <h2
               className="animate-fade-in-up font-display text-2xl"
               style={{ animationDelay: "150ms" }}

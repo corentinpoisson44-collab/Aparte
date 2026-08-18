@@ -199,7 +199,7 @@ async function main() {
       id: "default-household",
       name: "Notre foyer",
       members: {
-        create: [{ name: "Corentin" }, { name: "Partenaire" }],
+        create: [{ name: "Membre 1" }, { name: "Membre 2" }],
       },
     },
   });

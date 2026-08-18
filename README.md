@@ -51,7 +51,7 @@ sortir de sa zone de confort.
 npm install
 cp .env.example .env      # colle la DATABASE_URL Postgres (Neon) ici
 npm run db:migrate        # applique les migrations
-npm run db:seed           # foyer "Corentin / Partenaire" + 15 films mock
+npm run db:seed           # foyer "Membre 1 / Membre 2" + 15 films mock
 npm run dev
 ```
 
@@ -118,15 +118,8 @@ n'en nécessite pas).
 
 ### Lancer sur la TV
 
-Une fois le film révélé (`src/components/ResultReveal.tsx`), l'app
-interroge `GET /api/plex/clients` pour lister les lecteurs Plex (TV, box…)
-actuellement annoncés auprès du serveur du foyer, et propose un bouton par
-lecteur trouvé. Cliquer dessus appelle `POST /api/plex/play`, qui envoie
-directement au lecteur (en HTTP local, indépendamment du serveur — c'est
-ainsi que les clients Plex exposent leur contrôle) une commande de lecture
-pour ce film. Voir `src/lib/plex/clients.ts`. Le lecteur doit être allumé,
-sur le même réseau local, et son réglage Plex "Autoriser le contrôle de la
-lecture média" activé.
+Une fois le film révélé (`src/components/ResultReveal.tsx`), toucher
+l'affiche ouvre directement le film dans Plex via son `plexUrl`.
 
 ## Prochaines étapes (v1+)
 

@@ -162,6 +162,18 @@ export function OrientationQuestions({
     setStep((s) => s - 1);
   }
 
+  function skipAll() {
+    const finalAnswers: Answers = {
+      duration: "any",
+      genre: null,
+      origin: "any",
+      yearMin: null,
+      yearMax: null,
+    };
+    setAnswers(finalAnswers);
+    draw(finalAnswers);
+  }
+
   const genreOptions = [
     ...genres.map((g) => ({ value: g, label: g })),
     { value: "any", label: "Peu importe" },
@@ -196,6 +208,14 @@ export function OrientationQuestions({
             />
           ))}
         </div>
+        <button
+          type="button"
+          onClick={skipAll}
+          disabled={drawing}
+          className="shrink-0 text-sm text-ink/40 underline-offset-4 transition-colors hover:text-ink/70 hover:underline disabled:opacity-40"
+        >
+          Passer les questions
+        </button>
       </div>
 
       {step === 0 && (
@@ -206,7 +226,6 @@ export function OrientationQuestions({
           options={DURATION_OPTIONS}
           picked={picked}
           onPick={pickDuration}
-          onSkip={() => pickDuration("any")}
         />
       )}
       {step === 1 && (
@@ -216,7 +235,6 @@ export function OrientationQuestions({
           options={genreOptions}
           picked={picked}
           onPick={pickGenre}
-          onSkip={() => pickGenre("any")}
         />
       )}
       {step === 2 && (
@@ -226,7 +244,6 @@ export function OrientationQuestions({
           options={yearOptions}
           picked={picked}
           onPick={pickDecade}
-          onSkip={() => pickDecade("any")}
         />
       )}
       {step === 3 && (
@@ -236,7 +253,6 @@ export function OrientationQuestions({
           options={ORIGIN_OPTIONS}
           picked={picked}
           onPick={pickOrigin}
-          onSkip={() => pickOrigin("any")}
           loading={drawing}
           loadingLabel="On pioche…"
         />
@@ -254,7 +270,6 @@ function QuestionScreen<T extends string>({
   options,
   picked,
   onPick,
-  onSkip,
   loading,
   loadingLabel,
 }: {
@@ -264,7 +279,6 @@ function QuestionScreen<T extends string>({
   options: readonly { value: T; label: string }[];
   picked: string | null;
   onPick: (value: T) => void;
-  onSkip?: () => void;
   loading?: boolean;
   loadingLabel?: string;
 }) {
@@ -292,28 +306,7 @@ function QuestionScreen<T extends string>({
       {loading && (
         <p className="animate-fade-in text-sm text-ink/50">{loadingLabel}</p>
       )}
-      {onSkip && <SkipButton onSkip={onSkip} disabled={loading} />}
     </div>
-  );
-}
-
-/** Bouton discret pour passer une question sans y répondre ni filtrer dessus. */
-function SkipButton({
-  onSkip,
-  disabled,
-}: {
-  onSkip: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSkip}
-      disabled={disabled}
-      className="self-start text-sm text-ink/40 underline-offset-4 transition-colors hover:text-ink/70 hover:underline disabled:opacity-40"
-    >
-      Passer cette question
-    </button>
   );
 }
 

@@ -46,9 +46,10 @@ export function plexPosterUrl(baseUrl: string, serverToken: string, thumb: strin
 
 /**
  * Lien web "app.plex.tv" vers la fiche d'un film — utilisé en repli quand
- * l'appli Plex n'est pas installée (`app.plex.tv` n'est pas un domaine
- * "universal link" ouvert par l'appli sur iOS, contrairement à ce qu'on
- * pourrait attendre : il faut le schéma `plex://`, voir `plexAppUrl`).
+ * Plex n'a pas pu associer le film à une entrée de son catalogue (pas de
+ * `slug`, voir `plexWatchUrl`) : ce lien fonctionne dans un navigateur,
+ * mais `app.plex.tv` n'est pas un domaine "universal link" reconnu par
+ * l'appli iOS/Android — il ne l'ouvre pas directement dedans.
  */
 export function plexWebUrl(serverId: string, ratingKey: string): string {
   const key = encodeURIComponent(`/library/metadata/${ratingKey}`);
@@ -56,11 +57,13 @@ export function plexWebUrl(serverId: string, ratingKey: string): string {
 }
 
 /**
- * Lien "plex://" vers la fiche d'un film, ouvert directement par l'appli
- * Plex (iOS/Android/desktop) si elle est installée — c'est le schéma
- * officiel pour l'action "preplay" (écran d'infos avant lecture).
+ * Lien "watch.plex.tv" vers la fiche d'un film — domaine associé à l'appli
+ * Plex (iOS/Android) qui l'ouvre directement dedans (c'est le format
+ * généré par le bouton "Partager" natif de l'appli), avec repli automatique
+ * sur la page web si l'appli n'est pas installée. Le `slug` est fourni
+ * directement par le serveur Plex (voir `plexSlug` sur `Movie`) ; il est
+ * absent si le film n'a pas été reconnu par le catalogue Plex.
  */
-export function plexAppUrl(serverId: string, ratingKey: string): string {
-  const key = encodeURIComponent(`/library/metadata/${ratingKey}`);
-  return `plex://preplay/?metadataKey=${key}&server=${serverId}`;
+export function plexWatchUrl(slug: string): string {
+  return `https://watch.plex.tv/movie/${slug}`;
 }

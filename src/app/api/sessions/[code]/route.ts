@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { plexAppUrl, plexWebUrl } from "@/lib/plex/library";
+import { plexWatchUrl, plexWebUrl } from "@/lib/plex/library";
 
 export async function GET(
   _req: Request,
@@ -48,8 +48,11 @@ export async function GET(
       genre: m.genre,
       platform: m.platform,
       source: m.source,
-      plexAppUrl: plexServerId && m.plexKey ? plexAppUrl(plexServerId, m.plexKey) : null,
-      plexWebUrl: plexServerId && m.plexKey ? plexWebUrl(plexServerId, m.plexKey) : null,
+      plexUrl: m.plexSlug
+        ? plexWatchUrl(m.plexSlug)
+        : plexServerId && m.plexKey
+          ? plexWebUrl(plexServerId, m.plexKey)
+          : null,
     })),
     submittedMemberIds: session.rankings.map((r) => r.memberId),
     result,

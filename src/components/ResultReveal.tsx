@@ -119,9 +119,9 @@ export function ResultReveal({
             >
               Ce soir, vous regardez
             </p>
-            {winner.plexAppUrl ? (
+            {winner.plexUrl ? (
               <a
-                href={winner.plexAppUrl}
+                href={winner.plexUrl}
                 className="mb-1 animate-scale-in"
                 aria-label={`Ouvrir « ${winner.title} » dans Plex`}
               >
@@ -140,13 +140,9 @@ export function ResultReveal({
                 className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
               />
             )}
-            {winner.plexAppUrl && winner.plexWebUrl && (
+            {winner.plexUrl && (
               <p className="mb-4 animate-fade-in text-xs text-paper/40">
-                Toucher l&apos;affiche pour l&apos;ouvrir dans Plex — appli pas
-                installée ?{" "}
-                <a href={winner.plexWebUrl} className="underline underline-offset-2">
-                  ouvrir dans le navigateur
-                </a>
+                Toucher l&apos;affiche pour l&apos;ouvrir dans Plex
               </p>
             )}
             <h2

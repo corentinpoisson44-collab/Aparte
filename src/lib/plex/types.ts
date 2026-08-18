@@ -38,4 +38,6 @@ export type PlexMovie = {
   thumb?: string;
   duration?: number; // ms
   Genre?: { tag: string }[];
+  /** Identifiant "watch.plex.tv/movie/{slug}", absent si non reconnu par le catalogue Plex. */
+  slug?: string;
 };

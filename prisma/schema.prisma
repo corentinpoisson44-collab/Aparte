@@ -57,6 +57,11 @@ model Movie {
 
   tmdbId      Int?
   plexKey     String?
+  // Identifiant "watch.plex.tv/movie/{slug}" renvoyé par le serveur Plex :
+  // seul lien fiable pour ouvrir l'appli Plex (iOS/Android) directement sur
+  // la fiche du film — absent si Plex n'a pas pu faire correspondre le film
+  // à une entrée de son catalogue (vidéo perso non reconnue, etc.).
+  plexSlug    String?
   title       String
   year        Int
   posterUrl   String

@@ -10,10 +10,12 @@ export type MovieDTO = {
   genre: string;
   platform: string;
   source: "PLEX" | "DISCOVERY";
-  /** Lien "plex://" ouvert directement par l'appli Plex si elle est installée. */
-  plexAppUrl: string | null;
-  /** Repli web si l'appli Plex n'est pas installée ou n'intercepte pas le lien. */
-  plexWebUrl: string | null;
+  /**
+   * Lien pour ouvrir le film dans Plex : watch.plex.tv (ouvre l'appli
+   * directement) si le film a un `slug`, sinon repli app.plex.tv (page web
+   * seulement). `null` si Plex n'est pas connecté.
+   */
+  plexUrl: string | null;
 };
 
 export type MovieScoreDTO = {

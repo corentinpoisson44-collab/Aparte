@@ -13,10 +13,20 @@ function initials(title: string): string {
   return letters.join("") || "?";
 }
 
+const THEME_CLASSES = {
+  // Sur fond paper (clair) : la majorité des posters, fond clair par défaut.
+  light: "bg-ink/10 text-ink/40",
+  // Sur fond ink (carrousel/gagnant de ResultReveal) : les classes "light"
+  // y seraient quasi invisibles (fond sombre sur fond sombre).
+  dark: "bg-paper/10 text-paper/50",
+} as const;
+
 /**
- * Affiche `posterUrl`, avec un repli sur les initiales du titre si l'image
- * ne charge pas (poster manquant/supprimé côté Plex, réseau…) plutôt qu'une
- * icône de lien cassé.
+ * Affiche `posterUrl`, avec un repli si l'image ne charge pas (poster
+ * manquant/supprimé côté Plex, réseau…) plutôt qu'une icône de lien cassé :
+ * les initiales du titre par défaut, ou le titre en entier via
+ * `fallbackContent="title"` (carrousel où une simple initiale ne suffit
+ * pas à identifier le film).
  */
 export function MoviePoster({
   src,
@@ -24,6 +34,8 @@ export function MoviePoster({
   alt = title,
   className,
   style,
+  theme = "light",
+  fallbackContent = "initials",
   fallbackTextClassName = "text-lg",
 }: {
   src: string;
@@ -32,6 +44,9 @@ export function MoviePoster({
   alt?: string;
   className?: string;
   style?: CSSProperties;
+  /** Contexte de fond du poster, pour garder le repli lisible dans les deux cas. */
+  theme?: "light" | "dark";
+  fallbackContent?: "initials" | "title";
   fallbackTextClassName?: string;
 }) {
   const [errored, setErrored] = useState(false);
@@ -43,9 +58,11 @@ export function MoviePoster({
         aria-label={alt || undefined}
         aria-hidden={alt ? undefined : true}
         style={style}
-        className={`flex items-center justify-center bg-ink/10 font-display tracking-wide text-ink/40 ${fallbackTextClassName} ${className ?? ""}`}
+        className={`flex items-center justify-center p-1.5 text-center font-display tracking-wide ${THEME_CLASSES[theme]} ${fallbackTextClassName} ${className ?? ""}`}
       >
-        {initials(title)}
+        <span className={fallbackContent === "title" ? "line-clamp-4 w-full leading-tight" : ""}>
+          {fallbackContent === "title" ? title : initials(title)}
+        </span>
       </div>
     );
   }

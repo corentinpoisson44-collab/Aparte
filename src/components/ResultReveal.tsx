@@ -140,6 +140,9 @@ export function ResultReveal({
                       src={m.posterUrl}
                       title={m.title}
                       alt=""
+                      theme="dark"
+                      fallbackContent="title"
+                      fallbackTextClassName="text-xs"
                       style={{ width: ITEM_WIDTH, height: ITEM_HEIGHT }}
                       className="flex-none object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
                     />
@@ -170,6 +173,7 @@ export function ResultReveal({
                   src={winner.posterUrl}
                   title={winner.title}
                   alt=""
+                  theme="dark"
                   className="h-72 w-48 object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)] transition-opacity active:opacity-80"
                   fallbackTextClassName="text-5xl"
                 />
@@ -178,6 +182,7 @@ export function ResultReveal({
               <MoviePoster
                 src={winner.posterUrl}
                 title={winner.title}
+                theme="dark"
                 className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
                 fallbackTextClassName="text-5xl"
               />

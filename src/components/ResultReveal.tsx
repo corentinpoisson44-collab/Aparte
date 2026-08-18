@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MovieDTO, MovieScoreDTO } from "@/lib/types";
 import { formatRuntime } from "@/lib/format";
 
-const COUNTDOWN_START = 3;
-const TICK_MS = 1300;
+const ITEM_WIDTH = 112;
+const ITEM_HEIGHT = 168;
+const ITEM_GAP = 12;
+const STEP = ITEM_WIDTH + ITEM_GAP;
+const LOOPS = 4;
+const TAIL_LOOPS = 2;
+const FAST_MS = 1400;
+const SLOW_MS = 2600;
+const SLOW_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 type PlexPlayerClient = {
   machineIdentifier: string;
@@ -22,8 +29,14 @@ export function ResultReveal({
   winnerMovieId: string;
   scores: MovieScoreDTO[];
 }) {
-  const [count, setCount] = useState(COUNTDOWN_START);
-  const [revealed, setRevealed] = useState(false);
+  const [phase, setPhase] = useState<"spinning" | "revealed">("spinning");
+  const [offset, setOffset] = useState(0);
+  const [transition, setTransition] = useState<{ ms: number; easing: string }>({
+    ms: 0,
+    easing: "linear",
+  });
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const revealed = phase === "revealed";
   const [showDetails, setShowDetails] = useState(false);
   const [markedWatched, setMarkedWatched] = useState(false);
   const [clients, setClients] = useState<PlexPlayerClient[] | null>(null);
@@ -36,15 +49,62 @@ export function ResultReveal({
 
   const sortedScores = [...scores].sort((a, b) => b.points - a.points);
 
+  const { stripMovies, targetIndex } = useMemo(() => {
+    if (movies.length < 2) return { stripMovies: [] as MovieDTO[], targetIndex: -1 };
+    const winnerIndex = movies.findIndex((m) => m.id === winnerMovieId);
+    if (winnerIndex === -1) return { stripMovies: [] as MovieDTO[], targetIndex: -1 };
+    const arr: MovieDTO[] = [];
+    for (let i = 0; i < LOOPS; i++) arr.push(...movies);
+    arr.push(...movies.slice(0, winnerIndex + 1));
+    const targetIndex = arr.length - 1;
+    // Continue the strip past the winner so it doesn't look like the reel
+    // simply ran out — using only the other candidates so the winner
+    // itself never reappears right next to its landing spot.
+    const others = movies.filter((m) => m.id !== winnerMovieId);
+    const tailCount = movies.length * TAIL_LOOPS;
+    for (let i = 0; i < tailCount; i++) arr.push(others[i % others.length]);
+    return { stripMovies: arr, targetIndex };
+  }, [movies, winnerMovieId]);
+
+  const midIndex = Math.max(0, targetIndex - movies.length);
+
   useEffect(() => {
-    if (revealed) return;
-    if (count === 0) {
-      const t = setTimeout(() => setRevealed(true), TICK_MS);
+    if (stripMovies.length === 0) {
+      const t = setTimeout(() => setPhase("revealed"), 500);
       return () => clearTimeout(t);
     }
-    const t = setTimeout(() => setCount((c) => c - 1), TICK_MS);
-    return () => clearTimeout(t);
-  }, [count, revealed]);
+
+    const container = carouselRef.current;
+    if (!container) return;
+    const width = container.clientWidth;
+    const centerOf = (index: number) => width / 2 - (index * STEP + ITEM_WIDTH / 2);
+
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setTransition({ ms: FAST_MS, easing: "linear" });
+        setOffset(centerOf(midIndex));
+      });
+    });
+
+    const slowTimer = setTimeout(() => {
+      setTransition({ ms: SLOW_MS, easing: SLOW_EASING });
+      setOffset(centerOf(targetIndex));
+    }, FAST_MS + 30);
+
+    const revealTimer = setTimeout(() => {
+      setPhase("revealed");
+    }, FAST_MS + SLOW_MS + 150);
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(slowTimer);
+      clearTimeout(revealTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stripMovies.length]);
 
   useEffect(() => {
     if (!revealed) return;
@@ -101,17 +161,52 @@ export function ResultReveal({
     <div>
       <div className="-mx-4 flex min-h-[70vh] flex-col items-center justify-center overflow-hidden bg-ink px-6 py-16 text-paper sm:mx-0">
         {!revealed ? (
-          <>
+          <div className="flex w-full flex-col items-center">
             <p className="mb-6 animate-fade-in text-xs uppercase tracking-[0.3em] text-paper/50">
               Aparté choisit pour vous…
             </p>
-            <span
-              key={count}
-              className="animate-count-pop font-display text-[7rem] leading-none text-accent"
-            >
-              {count > 0 ? count : "—"}
-            </span>
-          </>
+            {stripMovies.length > 0 && (
+              <div
+                ref={carouselRef}
+                className="relative mx-auto w-full max-w-sm overflow-hidden"
+                style={{
+                  height: ITEM_HEIGHT,
+                  maskImage:
+                    "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
+                  WebkitMaskImage:
+                    "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
+                }}
+              >
+                <div
+                  className="flex items-center"
+                  style={{
+                    gap: ITEM_GAP,
+                    transform: `translateX(${offset}px)`,
+                    transitionProperty: "transform",
+                    transitionDuration: `${transition.ms}ms`,
+                    transitionTimingFunction: transition.easing,
+                    willChange: "transform",
+                  }}
+                >
+                  {stripMovies.map((m, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={`${m.id}-${i}`}
+                      src={m.posterUrl}
+                      alt=""
+                      style={{ width: ITEM_WIDTH, height: ITEM_HEIGHT }}
+                      className="flex-none object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
+                    />
+                  ))}
+                </div>
+                <div
+                  className="pointer-events-none absolute inset-y-0 border-x-2 border-accent"
+                  style={{ left: "50%", width: ITEM_WIDTH, transform: "translateX(-50%)" }}
+                  aria-hidden
+                />
+              </div>
+            )}
+          </div>
         ) : (
           <div className="flex w-full max-w-xs flex-col items-center text-center">
             <p

@@ -1,10 +1,18 @@
 "use client";
 
+import { useEffect } from "react";
 import { useMember } from "@/lib/client/useMember";
 
 /**
- * Bloque l'accès tant que la personne n'a pas choisi son profil sur cet
- * appareil. Pas d'auth en v0 : juste une identité mémorisée localement.
+ * Bloque l'accès à une session tant que l'identité de cet appareil n'est
+ * pas connue. Pas d'auth en v0, pas de choix manuel non plus : le foyer a
+ * exactement 2 membres fixes, et celui qui crée une session devient
+ * Membre 1 (attribué au clic sur "Créer une session", voir la page
+ * d'accueil) tandis que celui qui la rejoint via un code tapé devient
+ * Membre 2 (idem, voir la page d'accueil). Ce composant ne gère que le cas
+ * restant : l'arrivée directe sur une session (lien/QR code partagé) sans
+ * être passé par ces actions — dans ce cas, on attribue Membre 2 par
+ * défaut, uniquement si cet appareil n'a pas déjà une identité.
  */
 export function ProfileGate({
   children,
@@ -13,31 +21,18 @@ export function ProfileGate({
 }) {
   const { members, memberId, currentMember, setMemberId, loading, error } = useMember();
 
-  if (loading) {
-    return <p className="animate-fade-in p-6 text-ink/50">Un instant…</p>;
-  }
+  useEffect(() => {
+    if (loading || memberId || !members) return;
+    const joiner = members[1] ?? members[0];
+    if (joiner) setMemberId(joiner.id);
+  }, [loading, memberId, members, setMemberId]);
 
   if (error) {
     return <p className="animate-fade-in p-6 text-center text-accent">{error}</p>;
   }
 
-  if (!memberId || !currentMember) {
-    return (
-      <div className="mx-auto max-w-sm animate-fade-in-up p-6">
-        <h2 className="mb-4 font-display text-lg">Qui es-tu ?</h2>
-        <div className="flex flex-col gap-2">
-          {members?.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setMemberId(m.id)}
-              className="rounded-sm border border-ink/20 bg-paper px-4 py-3 text-left font-display text-lg transition-all duration-150 hover:border-ink active:scale-[0.99]"
-            >
-              {m.name}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
+  if (loading || !memberId || !currentMember) {
+    return <p className="animate-fade-in p-6 text-ink/50">Un instant…</p>;
   }
 
   return <>{children(memberId, currentMember.name)}</>;

@@ -26,8 +26,10 @@ sortir de sa zone de confort.
   toute transaction, y compris celle que Prisma ouvre implicitement pour un
   simple `create`, ce qui casse toute écriture)
 - **@dnd-kit** pour le classement en glisser-déposer (souris, tactile, clavier)
-- Pas d'authentification en v0 : un seul foyer (2 profils fixes), choisi une
-  fois par appareil (mémorisé en `localStorage`)
+- Pas d'authentification en v0 : un seul foyer (2 profils fixes), attribué
+  automatiquement par appareil selon l'action (créer = Membre 1, rejoindre
+  = Membre 2 — voir `src/components/ProfileGate.tsx`) et mémorisé en
+  `localStorage`
 
 ## Déploiement (Vercel + Neon)
 
@@ -57,9 +59,10 @@ npm run db:seed           # foyer "Membre 1 / Membre 2" + 15 films mock
 npm run dev
 ```
 
-Ouvrir http://localhost:3000, choisir un profil, créer une session, partager
-le code à 5 caractères, classer les films sur le deuxième appareil/onglet
-avec l'autre profil.
+Ouvrir http://localhost:3000, créer une session (cet appareil devient
+Membre 1), partager le code à 5 caractères, le taper (ou scanner le QR
+code) sur le deuxième appareil/onglet pour rejoindre en tant que Membre 2,
+puis classer les films de chaque côté.
 
 Les routes de création/révélation de session enchaînent des requêtes
 indépendantes plutôt que des écritures imbriquées ou un `$transaction([...])`

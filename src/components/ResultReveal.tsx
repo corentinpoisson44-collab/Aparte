@@ -220,7 +220,7 @@ export function ResultReveal({
 
           <button
             onClick={() => setShowDetails((v) => !v)}
-            className="mt-4 w-full text-center text-sm text-ink/50 transition-colors hover:text-ink"
+            className="mt-4 w-full text-center text-sm text-ink/50 underline transition-colors hover:text-ink"
           >
             {showDetails ? "Masquer" : "Voir comment on a choisi"}
           </button>

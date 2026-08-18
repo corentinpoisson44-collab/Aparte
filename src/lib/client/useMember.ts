@@ -6,8 +6,10 @@ import type { Member } from "@/lib/types";
 const STORAGE_KEY = "aparte:memberId";
 
 /**
- * v0 n'a pas d'authentification : chaque personne choisit son profil une
- * fois sur son appareil, mémorisé en localStorage.
+ * v0 n'a pas d'authentification : l'identité de chaque appareil (l'un des
+ * 2 membres fixes du foyer) est attribuée automatiquement — créer une
+ * session vaut Membre 1, la rejoindre vaut Membre 2 (voir la page
+ * d'accueil et `ProfileGate`) — puis mémorisée en localStorage.
  */
 export function useMember() {
   const [members, setMembers] = useState<Member[] | null>(null);

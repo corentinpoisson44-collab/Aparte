@@ -106,6 +106,10 @@ model SessionMovie {
   sessionId String
   movie     Movie   @relation(fields: [movieId], references: [id])
   movieId   String
+  // false si ce film a été ajouté en complément (pas assez de films
+  // correspondant aux préférences répondues) plutôt que réellement tiré
+  // parmi ceux qui correspondent — voir src/lib/draw.ts.
+  matchesFilters Boolean @default(true)
 
   @@unique([sessionId, movieId])
 }

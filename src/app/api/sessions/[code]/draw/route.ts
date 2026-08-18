@@ -3,8 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { drawMoviesForHousehold, type DrawFilters } from "@/lib/draw";
 import { WatchStatus } from "@/generated/prisma/client";
 
+const MIN_COUNT = 2;
+const MAX_COUNT = 9;
+
 function parseYear(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function parseCount(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return Math.min(MAX_COUNT, Math.max(MIN_COUNT, Math.round(value)));
 }
 
 function parseFilters(body: unknown): DrawFilters {
@@ -15,6 +23,7 @@ function parseFilters(body: unknown): DrawFilters {
     origin: b.origin === "library" || b.origin === "discovery" ? b.origin : "any",
     yearMin: parseYear(b.yearMin),
     yearMax: parseYear(b.yearMax),
+    count: parseCount(b.count),
   };
 }
 
@@ -63,7 +72,11 @@ export async function POST(
   // exigence d'atomicité ici (un échec partiel laisse juste une session
   // incomplète, sans conséquence pour l'utilisateur).
   await prisma.sessionMovie.createMany({
-    data: movies.map((m) => ({ sessionId: session.id, movieId: m.id })),
+    data: movies.map((m) => ({
+      sessionId: session.id,
+      movieId: m.id,
+      matchesFilters: m.matchesFilters,
+    })),
   });
 
   await prisma.watchHistory.createMany({

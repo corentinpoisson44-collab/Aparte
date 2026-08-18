@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 
+const COUNT_OPTIONS = [
+  { value: "3", label: "3 films" },
+  { value: "5", label: "5 films" },
+  { value: "7", label: "7 films" },
+  { value: "9", label: "9 films" },
+] as const;
+const DEFAULT_COUNT = 5;
+
 const DURATION_OPTIONS = [
   { value: "short", label: "Plutôt court" },
   { value: "long", label: "Plutôt long" },
@@ -17,6 +25,7 @@ const ORIGIN_OPTIONS = [
 type Duration = (typeof DURATION_OPTIONS)[number]["value"];
 type Origin = (typeof ORIGIN_OPTIONS)[number]["value"];
 type Answers = {
+  count: number;
   duration: Duration;
   genre: string | null;
   origin: Origin;
@@ -25,16 +34,17 @@ type Answers = {
 };
 type YearBounds = { min: number; max: number };
 
-const STEP_COUNT = 4;
+const STEP_COUNT = 5;
 /** Pause pour laisser voir la sélection avant de passer à l'écran suivant. */
 const ADVANCE_DELAY_MS = 220;
 
 /**
  * Questions posées juste après la création d'une session pour orienter le
- * tirage : durée, ambiance/genre, valeur sûre ou découverte — un écran par
- * question, comme un petit questionnaire mobile. Le tirage n'a lieu qu'une
- * fois la dernière réponse donnée (voir POST /api/sessions/[code]/draw) —
- * tout est facultatif, "peu importe" partout revient au tirage sans
+ * tirage : nombre de films, durée, ambiance/genre, valeur sûre ou
+ * découverte — un écran par question, comme un petit questionnaire
+ * mobile. Le tirage n'a lieu qu'une fois la dernière réponse donnée (voir
+ * POST /api/sessions/[code]/draw) — tout est facultatif, "peu importe"
+ * partout (et le nombre de films par défaut) revient au tirage sans
  * préférence.
  */
 export function OrientationQuestions({
@@ -50,6 +60,7 @@ export function OrientationQuestions({
   const [yearBounds, setYearBounds] = useState<YearBounds | null>(null);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>({
+    count: DEFAULT_COUNT,
     duration: "any",
     genre: null,
     origin: "any",
@@ -112,12 +123,21 @@ export function OrientationQuestions({
     }
   }
 
+  function pickCount(value: string) {
+    setPicked(value);
+    setAnswers((a) => ({ ...a, count: Number(value) }));
+    window.setTimeout(() => {
+      setPicked(null);
+      setStep(1);
+    }, ADVANCE_DELAY_MS);
+  }
+
   function pickDuration(value: Duration) {
     setPicked(value);
     setAnswers((a) => ({ ...a, duration: value }));
     window.setTimeout(() => {
       setPicked(null);
-      setStep(1);
+      setStep(2);
     }, ADVANCE_DELAY_MS);
   }
 
@@ -127,7 +147,7 @@ export function OrientationQuestions({
     setAnswers((a) => ({ ...a, genre }));
     window.setTimeout(() => {
       setPicked(null);
-      setStep(2);
+      setStep(3);
     }, ADVANCE_DELAY_MS);
   }
 
@@ -141,7 +161,7 @@ export function OrientationQuestions({
     }));
     window.setTimeout(() => {
       setPicked(null);
-      setStep(3);
+      setStep(4);
     }, ADVANCE_DELAY_MS);
   }
 
@@ -164,6 +184,7 @@ export function OrientationQuestions({
 
   function skipAll() {
     const finalAnswers: Answers = {
+      count: answers.count,
       duration: "any",
       genre: null,
       origin: "any",
@@ -220,15 +241,24 @@ export function OrientationQuestions({
 
       {step === 0 && (
         <QuestionScreen
-          stepKey="duration"
+          stepKey="count"
           title="On oriente un peu ?"
+          subtitle="Combien de films vous proposer ce soir ?"
+          options={COUNT_OPTIONS}
+          picked={picked ?? String(answers.count)}
+          onPick={pickCount}
+        />
+      )}
+      {step === 1 && (
+        <QuestionScreen
+          stepKey="duration"
           subtitle="Côté durée, vous êtes plutôt…"
           options={DURATION_OPTIONS}
           picked={picked}
           onPick={pickDuration}
         />
       )}
-      {step === 1 && (
+      {step === 2 && (
         <QuestionScreen
           stepKey="genre"
           subtitle="Côté ambiance, vous êtes plutôt…"
@@ -237,7 +267,7 @@ export function OrientationQuestions({
           onPick={pickGenre}
         />
       )}
-      {step === 2 && (
+      {step === 3 && (
         <QuestionScreen
           stepKey="year"
           subtitle="Côté date de sortie, plutôt…"
@@ -246,7 +276,7 @@ export function OrientationQuestions({
           onPick={pickDecade}
         />
       )}
-      {step === 3 && (
+      {step === 4 && (
         <QuestionScreen
           stepKey="origin"
           subtitle="Ce soir, plutôt…"

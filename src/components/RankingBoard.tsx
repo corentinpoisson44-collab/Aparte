@@ -25,6 +25,7 @@ import type { MovieDTO } from "@/lib/types";
 function SortableMovie({
   movie,
   rank,
+  total,
   index,
   canMoveUp,
   canMoveDown,
@@ -33,6 +34,7 @@ function SortableMovie({
 }: {
   movie: MovieDTO;
   rank: number;
+  total: number;
   index: number;
   canMoveUp: boolean;
   canMoveDown: boolean;
@@ -63,6 +65,7 @@ function SortableMovie({
       <MovieCard
         movie={movie}
         rank={rank}
+        total={total}
         draggable
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
@@ -84,6 +87,7 @@ export function RankingBoard({
 }) {
   const [order, setOrder] = useState(movies.map((m) => m.id));
   const byId = new Map(movies.map((m) => [m.id, m]));
+  const someOutOfFilters = movies.some((m) => !m.matchesFilters);
 
   // MouseSensor (et non PointerSensor) pour ne pas intercepter les gestes
   // tactiles : PointerSensor réagit aussi au touch, ce qui casserait le
@@ -115,10 +119,18 @@ export function RankingBoard({
 
   return (
     <div>
-      <p className="mb-4 animate-fade-in-up text-sm text-ink/50">
+      <p
+        className={`animate-fade-in-up text-sm text-ink/50 ${someOutOfFilters ? "mb-1" : "mb-4"}`}
+      >
         Fais glisser les films pour les classer, du plus envie (1) au moins
-        envie (5) — ou utilise les flèches ▲▼.
+        envie ({movies.length}) — ou utilise les flèches ▲▼.
       </p>
+      {someOutOfFilters && (
+        <p className="mb-4 animate-fade-in-up text-sm text-accent">
+          Pas assez de films correspondaient à tes critères : on a complété
+          avec d&apos;autres, repérables par « hors critères ».
+        </p>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -134,6 +146,7 @@ export function RankingBoard({
                   key={id}
                   movie={movie}
                   rank={index + 1}
+                  total={order.length}
                   index={index}
                   canMoveUp={index > 0}
                   canMoveDown={index < order.length - 1}

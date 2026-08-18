@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MoviePoster } from "@/components/MoviePoster";
 
 type HistorySession = {
   code: string;
@@ -44,11 +45,11 @@ export default function HistoryPage() {
             style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
           >
             {s.winnerMovie && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <MoviePoster
                 src={s.winnerMovie.posterUrl}
-                alt={s.winnerMovie.title}
+                title={s.winnerMovie.title}
                 className="h-24 w-16 shrink-0 object-cover"
+                fallbackTextClassName="text-sm"
               />
             )}
             <div className="min-w-0 flex-1">

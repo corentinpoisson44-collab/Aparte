@@ -3,10 +3,13 @@
 import { useState } from "react";
 import type { MovieDTO } from "@/lib/types";
 import { formatRuntime } from "@/lib/format";
+import { MoviePoster } from "@/components/MoviePoster";
+import { rankTint } from "@/lib/rankColor";
 
 export function MovieCard({
   movie,
   rank,
+  total,
   draggable,
   canMoveUp,
   canMoveDown,
@@ -15,6 +18,8 @@ export function MovieCard({
 }: {
   movie: MovieDTO;
   rank?: number;
+  /** Nombre de films classés, pour situer `rank` sur le dégradé vert → rouge. */
+  total?: number;
   draggable?: boolean;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
@@ -22,22 +27,24 @@ export function MovieCard({
   onMoveDown?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const tint = rank !== undefined && total !== undefined ? rankTint(rank, total) : undefined;
 
   return (
     <div
       onClick={() => setExpanded((v) => !v)}
-      className="flex cursor-pointer items-stretch gap-4 border-b border-ink/10 bg-paper py-3 transition-colors hover:bg-ink/[0.025]"
+      style={tint ? { backgroundColor: tint } : undefined}
+      className={`flex cursor-pointer items-stretch gap-4 border-b border-ink/10 py-3 transition hover:brightness-95 ${tint ? "" : "bg-paper hover:bg-ink/[0.025]"}`}
     >
       {rank !== undefined && (
         <div className="flex w-9 shrink-0 items-start justify-center pt-1 font-display text-3xl leading-none text-ink/25">
           {rank}
         </div>
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <MoviePoster
         src={movie.posterUrl}
-        alt={movie.title}
+        title={movie.title}
         className="h-28 w-[4.5rem] shrink-0 object-cover"
+        fallbackTextClassName="text-base"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
@@ -52,6 +59,14 @@ export function MovieCard({
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs uppercase tracking-wide text-ink/45">
           <span>{movie.platform}</span>
           {movie.genre && <span>{movie.genre}</span>}
+          {!movie.matchesFilters && (
+            <span
+              className="text-accent"
+              title="Ajouté en complément : ne correspond pas à tous tes critères"
+            >
+              hors critères
+            </span>
+          )}
           <span className="inline-flex items-center gap-1 text-accent">
             <svg
               aria-hidden="true"

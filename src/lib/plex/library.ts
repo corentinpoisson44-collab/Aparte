@@ -62,5 +62,5 @@ export function plexWebUrl(serverId: string, ratingKey: string): string {
  */
 export function plexAppUrl(serverId: string, ratingKey: string): string {
   const key = encodeURIComponent(`/library/metadata/${ratingKey}`);
-  return `plex://preplay/?metadataKey=${key}&metadataType=1&server=${serverId}`;
+  return `plex://preplay/?metadataKey=${key}&server=${serverId}`;
 }

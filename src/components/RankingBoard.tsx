@@ -25,6 +25,7 @@ import type { MovieDTO } from "@/lib/types";
 function SortableMovie({
   movie,
   rank,
+  total,
   index,
   canMoveUp,
   canMoveDown,
@@ -33,6 +34,7 @@ function SortableMovie({
 }: {
   movie: MovieDTO;
   rank: number;
+  total: number;
   index: number;
   canMoveUp: boolean;
   canMoveDown: boolean;
@@ -63,6 +65,7 @@ function SortableMovie({
       <MovieCard
         movie={movie}
         rank={rank}
+        total={total}
         draggable
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
@@ -143,6 +146,7 @@ export function RankingBoard({
                   key={id}
                   movie={movie}
                   rank={index + 1}
+                  total={order.length}
                   index={index}
                   canMoveUp={index > 0}
                   canMoveDown={index < order.length - 1}

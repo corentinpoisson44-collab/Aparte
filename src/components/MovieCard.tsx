@@ -4,10 +4,12 @@ import { useState } from "react";
 import type { MovieDTO } from "@/lib/types";
 import { formatRuntime } from "@/lib/format";
 import { MoviePoster } from "@/components/MoviePoster";
+import { rankTint } from "@/lib/rankColor";
 
 export function MovieCard({
   movie,
   rank,
+  total,
   draggable,
   canMoveUp,
   canMoveDown,
@@ -16,6 +18,8 @@ export function MovieCard({
 }: {
   movie: MovieDTO;
   rank?: number;
+  /** Nombre de films classés, pour situer `rank` sur le dégradé vert → rouge. */
+  total?: number;
   draggable?: boolean;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
@@ -23,11 +27,13 @@ export function MovieCard({
   onMoveDown?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const tint = rank !== undefined && total !== undefined ? rankTint(rank, total) : undefined;
 
   return (
     <div
       onClick={() => setExpanded((v) => !v)}
-      className="flex cursor-pointer items-stretch gap-4 border-b border-ink/10 bg-paper py-3 transition-colors hover:bg-ink/[0.025]"
+      style={tint ? { backgroundColor: tint } : undefined}
+      className={`flex cursor-pointer items-stretch gap-4 border-b border-ink/10 py-3 transition hover:brightness-95 ${tint ? "" : "bg-paper hover:bg-ink/[0.025]"}`}
     >
       {rank !== undefined && (
         <div className="flex w-9 shrink-0 items-start justify-center pt-1 font-display text-3xl leading-none text-ink/25">

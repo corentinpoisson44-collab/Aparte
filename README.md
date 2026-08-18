@@ -51,7 +51,7 @@ sortir de sa zone de confort.
 npm install
 cp .env.example .env      # colle la DATABASE_URL Postgres (Neon) ici
 npm run db:migrate        # applique les migrations
-npm run db:seed           # foyer "Corentin / Partenaire" + 15 films mock
+npm run db:seed           # foyer "Membre 1 / Membre 2" + 15 films mock
 npm run dev
 ```
 

@@ -14,12 +14,6 @@ const FAST_MS = 1400;
 const SLOW_MS = 2600;
 const SLOW_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 
-type PlexPlayerClient = {
-  machineIdentifier: string;
-  name: string;
-  product: string;
-};
-
 export function ResultReveal({
   movies,
   winnerMovieId,
@@ -39,11 +33,6 @@ export function ResultReveal({
   const revealed = phase === "revealed";
   const [showDetails, setShowDetails] = useState(false);
   const [markedWatched, setMarkedWatched] = useState(false);
-  const [clients, setClients] = useState<PlexPlayerClient[] | null>(null);
-  const [clientsError, setClientsError] = useState<string | null>(null);
-  const [launching, setLaunching] = useState<string | null>(null);
-  const [launchMessage, setLaunchMessage] = useState<string | null>(null);
-  const [launchError, setLaunchError] = useState<string | null>(null);
   const byId = new Map(movies.map((m) => [m.id, m]));
   const winner = byId.get(winnerMovieId);
 
@@ -106,53 +95,9 @@ export function ResultReveal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stripMovies.length]);
 
-  useEffect(() => {
-    if (!revealed) return;
-    let cancelled = false;
-    fetch("/api/plex/clients")
-      .then((res) => (res.ok ? res.json() : { clients: [] }))
-      .then((data: { clients?: PlexPlayerClient[]; error?: string }) => {
-        if (cancelled) return;
-        setClients(data.clients ?? []);
-        setClientsError(data.error ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setClients([]);
-          setClientsError("Impossible de chercher un lecteur Plex pour le moment.");
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [revealed]);
-
   async function markWatched() {
     await fetch(`/api/movies/${winnerMovieId}/watched`, { method: "POST" });
     setMarkedWatched(true);
-  }
-
-  async function launchOnClient(machineIdentifier: string) {
-    setLaunching(machineIdentifier);
-    setLaunchError(null);
-    setLaunchMessage(null);
-    try {
-      const res = await fetch("/api/plex/play", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ movieId: winnerMovieId, machineIdentifier }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setLaunchError(data.error ?? "Impossible de lancer la lecture, réessaie.");
-        return;
-      }
-      setLaunchMessage("Lecture lancée !");
-    } catch {
-      setLaunchError("Petit souci de connexion — réessaie.");
-    } finally {
-      setLaunching(null);
-    }
   }
 
   if (!winner) return null;
@@ -258,36 +203,6 @@ export function ResultReveal({
 
       {revealed && (
         <div className="animate-fade-in-up px-1 py-5" style={{ animationDelay: "280ms" }}>
-          {clients && (
-            <div className="mb-3 flex flex-col gap-2">
-              {clients.length > 0 ? (
-                clients.map((c) => (
-                  <button
-                    key={c.machineIdentifier}
-                    onClick={() => launchOnClient(c.machineIdentifier)}
-                    disabled={launching !== null}
-                    className="w-full rounded-sm border border-ink bg-paper px-4 py-3 font-medium text-ink transition-all duration-150 hover:bg-ink hover:text-paper active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-                  >
-                    {launching === c.machineIdentifier
-                      ? "Lancement…"
-                      : `▶ Lancer sur ${c.name}`}
-                  </button>
-                ))
-              ) : (
-                <p className="text-center text-sm text-ink/40">
-                  {clientsError ??
-                    "Aucun lecteur Plex trouvé — ouvre l'appli Plex sur ta TV (avec le même compte) pour pouvoir lancer la lecture depuis ici."}
-                </p>
-              )}
-              {launchMessage && (
-                <p className="animate-fade-in text-center text-sm text-ink/70">{launchMessage}</p>
-              )}
-              {launchError && (
-                <p className="animate-fade-in text-center text-sm text-accent">{launchError}</p>
-              )}
-            </div>
-          )}
-
           <button
             onClick={markWatched}
             disabled={markedWatched}

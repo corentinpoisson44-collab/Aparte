@@ -31,11 +31,6 @@ model Household {
   plexServerAccessToken String?
   plexLastSyncedAt      DateTime?
 
-  // Sources activées (cases à cocher : Plex + plateformes de streaming) pour
-  // filtrer les films piochés. Toutes activées par défaut. Voir
-  // src/lib/sources.ts pour la liste connue.
-  enabledSources String[] @default(["Plex", "Netflix", "Disney+", "Amazon Prime Video", "Canal+", "Apple TV+", "Max", "Paramount+"])
-
   createdAt DateTime @default(now())
 }
 
@@ -62,13 +57,18 @@ model Movie {
 
   tmdbId      Int?
   plexKey     String?
+  // Identifiant "watch.plex.tv/movie/{slug}" renvoyé par le serveur Plex :
+  // seul lien fiable pour ouvrir l'appli Plex (iOS/Android) directement sur
+  // la fiche du film — absent si Plex n'a pas pu faire correspondre le film
+  // à une entrée de son catalogue (vidéo perso non reconnue, etc.).
+  plexSlug    String?
   title       String
   year        Int
   posterUrl   String
   synopsis    String
   runtimeMin  Int
   genre       String   @default("")
-  platform    String // ex: "Plex", "Netflix", "Disney+"
+  platform    String // "Plex" pour tous les films désormais (v0/v1 avaient d'autres plateformes)
   source      MovieSource
 
   sessionMovies SessionMovie[]

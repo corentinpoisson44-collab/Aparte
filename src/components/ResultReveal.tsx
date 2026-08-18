@@ -7,6 +7,12 @@ import { formatRuntime } from "@/lib/format";
 const COUNTDOWN_START = 3;
 const TICK_MS = 1300;
 
+type PlexPlayerClient = {
+  machineIdentifier: string;
+  name: string;
+  product: string;
+};
+
 export function ResultReveal({
   movies,
   winnerMovieId,
@@ -20,6 +26,11 @@ export function ResultReveal({
   const [revealed, setRevealed] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [markedWatched, setMarkedWatched] = useState(false);
+  const [clients, setClients] = useState<PlexPlayerClient[] | null>(null);
+  const [clientsError, setClientsError] = useState<string | null>(null);
+  const [launching, setLaunching] = useState<string | null>(null);
+  const [launchMessage, setLaunchMessage] = useState<string | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(null);
   const byId = new Map(movies.map((m) => [m.id, m]));
   const winner = byId.get(winnerMovieId);
 
@@ -35,9 +46,53 @@ export function ResultReveal({
     return () => clearTimeout(t);
   }, [count, revealed]);
 
+  useEffect(() => {
+    if (!revealed) return;
+    let cancelled = false;
+    fetch("/api/plex/clients")
+      .then((res) => (res.ok ? res.json() : { clients: [] }))
+      .then((data: { clients?: PlexPlayerClient[]; error?: string }) => {
+        if (cancelled) return;
+        setClients(data.clients ?? []);
+        setClientsError(data.error ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setClients([]);
+          setClientsError("Impossible de chercher un lecteur Plex pour le moment.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [revealed]);
+
   async function markWatched() {
     await fetch(`/api/movies/${winnerMovieId}/watched`, { method: "POST" });
     setMarkedWatched(true);
+  }
+
+  async function launchOnClient(machineIdentifier: string) {
+    setLaunching(machineIdentifier);
+    setLaunchError(null);
+    setLaunchMessage(null);
+    try {
+      const res = await fetch("/api/plex/play", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ movieId: winnerMovieId, machineIdentifier }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setLaunchError(data.error ?? "Impossible de lancer la lecture, réessaie.");
+        return;
+      }
+      setLaunchMessage("Lecture lancée !");
+    } catch {
+      setLaunchError("Petit souci de connexion — réessaie.");
+    } finally {
+      setLaunching(null);
+    }
   }
 
   if (!winner) return null;
@@ -64,12 +119,32 @@ export function ResultReveal({
             >
               Ce soir, vous regardez
             </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={winner.posterUrl}
-              alt={winner.title}
-              className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
-            />
+            {winner.plexUrl ? (
+              <a
+                href={winner.plexUrl}
+                className="mb-1 animate-scale-in"
+                aria-label={`Ouvrir « ${winner.title} » dans Plex`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={winner.posterUrl}
+                  alt={winner.title}
+                  className="h-72 w-48 object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)] transition-opacity active:opacity-80"
+                />
+              </a>
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={winner.posterUrl}
+                alt={winner.title}
+                className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
+              />
+            )}
+            {winner.plexUrl && (
+              <p className="mb-4 animate-fade-in text-xs text-paper/40">
+                Toucher l&apos;affiche pour l&apos;ouvrir dans Plex
+              </p>
+            )}
             <h2
               className="animate-fade-in-up font-display text-2xl"
               style={{ animationDelay: "150ms" }}
@@ -88,6 +163,36 @@ export function ResultReveal({
 
       {revealed && (
         <div className="animate-fade-in-up px-1 py-5" style={{ animationDelay: "280ms" }}>
+          {clients && (
+            <div className="mb-3 flex flex-col gap-2">
+              {clients.length > 0 ? (
+                clients.map((c) => (
+                  <button
+                    key={c.machineIdentifier}
+                    onClick={() => launchOnClient(c.machineIdentifier)}
+                    disabled={launching !== null}
+                    className="w-full rounded-sm border border-ink bg-paper px-4 py-3 font-medium text-ink transition-all duration-150 hover:bg-ink hover:text-paper active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+                  >
+                    {launching === c.machineIdentifier
+                      ? "Lancement…"
+                      : `▶ Lancer sur ${c.name}`}
+                  </button>
+                ))
+              ) : (
+                <p className="text-center text-sm text-ink/40">
+                  {clientsError ??
+                    "Aucun lecteur Plex trouvé — ouvre l'appli Plex sur ta TV (avec le même compte) pour pouvoir lancer la lecture depuis ici."}
+                </p>
+              )}
+              {launchMessage && (
+                <p className="animate-fade-in text-center text-sm text-ink/70">{launchMessage}</p>
+              )}
+              {launchError && (
+                <p className="animate-fade-in text-center text-sm text-accent">{launchError}</p>
+              )}
+            </div>
+          )}
+
           <button
             onClick={markWatched}
             disabled={markedWatched}

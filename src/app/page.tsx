@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileGate } from "@/components/ProfileGate";
 import { PlexConnect } from "@/components/PlexConnect";
-import { SourceSelector } from "@/components/SourceSelector";
 import { OrientationQuestions } from "@/components/OrientationQuestions";
 
 export default function Home() {
@@ -98,7 +97,6 @@ export default function Home() {
               </div>
 
               <PlexConnect />
-              <SourceSelector />
             </div>
           )
         }

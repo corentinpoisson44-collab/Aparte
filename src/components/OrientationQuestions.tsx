@@ -11,15 +11,15 @@ const COUNT_OPTIONS = [
 const DEFAULT_COUNT = 5;
 
 const DURATION_OPTIONS = [
+  { value: "any", label: "Peu importe" },
   { value: "short", label: "Plutôt court" },
   { value: "long", label: "Plutôt long" },
-  { value: "any", label: "Peu importe" },
 ] as const;
 
 const ORIGIN_OPTIONS = [
+  { value: "any", label: "Peu importe" },
   { value: "library", label: "Une valeur sûre" },
   { value: "discovery", label: "Une découverte" },
-  { value: "any", label: "Peu importe" },
 ] as const;
 
 type Duration = (typeof DURATION_OPTIONS)[number]["value"];
@@ -196,16 +196,16 @@ export function OrientationQuestions({
   }
 
   const genreOptions = [
-    ...genres.map((g) => ({ value: g, label: g })),
     { value: "any", label: "Peu importe" },
+    ...genres.map((g) => ({ value: g, label: g })),
   ];
 
   const yearOptions = [
+    { value: "any", label: "Peu importe" },
     ...decadesInRange(yearBounds).map((d) => ({
       value: String(d),
       label: `${d} - ${d + 9}`,
     })),
-    { value: "any", label: "Peu importe" },
   ];
 
   return (
@@ -316,14 +316,14 @@ function QuestionScreen<T extends string>({
     <div key={stepKey} className="flex animate-fade-in-up flex-col gap-4">
       {title && <h2 className="font-display text-xl">{title}</h2>}
       <p className="text-ink/60">{subtitle}</p>
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {options.map((opt) => (
           <button
             key={opt.value}
             type="button"
             disabled={loading}
             onClick={() => onPick(opt.value)}
-            className={`rounded-sm border px-4 py-3 text-left font-display text-lg transition-all duration-150 active:scale-[0.99] disabled:opacity-50 ${
+            className={`flex aspect-square items-center justify-center rounded-sm border p-2 text-center font-display text-sm leading-tight transition-all duration-150 active:scale-[0.99] disabled:opacity-50 ${
               picked === opt.value
                 ? "border-ink bg-ink text-paper"
                 : "border-ink/20 hover:border-ink"

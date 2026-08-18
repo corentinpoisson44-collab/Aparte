@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { MovieDTO } from "@/lib/types";
 import { formatRuntime } from "@/lib/format";
+import { MoviePoster } from "@/components/MoviePoster";
 
 export function MovieCard({
   movie,
@@ -33,11 +34,11 @@ export function MovieCard({
           {rank}
         </div>
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <MoviePoster
         src={movie.posterUrl}
-        alt={movie.title}
+        title={movie.title}
         className="h-28 w-[4.5rem] shrink-0 object-cover"
+        fallbackTextClassName="text-base"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">

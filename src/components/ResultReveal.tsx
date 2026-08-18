@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MovieDTO, MovieScoreDTO } from "@/lib/types";
 import { formatRuntime } from "@/lib/format";
+import { MoviePoster } from "@/components/MoviePoster";
 
 const ITEM_WIDTH = 112;
 const ITEM_HEIGHT = 168;
@@ -134,10 +135,10 @@ export function ResultReveal({
                   }}
                 >
                   {stripMovies.map((m, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <MoviePoster
                       key={`${m.id}-${i}`}
                       src={m.posterUrl}
+                      title={m.title}
                       alt=""
                       style={{ width: ITEM_WIDTH, height: ITEM_HEIGHT }}
                       className="flex-none object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
@@ -165,19 +166,20 @@ export function ResultReveal({
                 className="mb-1 animate-scale-in"
                 aria-label={`Ouvrir « ${winner.title} » dans Plex`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <MoviePoster
                   src={winner.posterUrl}
-                  alt={winner.title}
+                  title={winner.title}
+                  alt=""
                   className="h-72 w-48 object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)] transition-opacity active:opacity-80"
+                  fallbackTextClassName="text-5xl"
                 />
               </a>
             ) : (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
+              <MoviePoster
                 src={winner.posterUrl}
-                alt={winner.title}
+                title={winner.title}
                 className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
+                fallbackTextClassName="text-5xl"
               />
             )}
             {winner.plexUrl && (

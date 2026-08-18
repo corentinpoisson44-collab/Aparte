@@ -13,29 +13,6 @@ type PlexPlayerClient = {
   product: string;
 };
 
-/** Le temps sur `app.plex.tv` n'ouvre pas l'appli iOS/Android (pas un universal link
- * reconnu) : on tente d'abord le schéma `plex://`, et on ne bascule sur le lien web
- * que si rien n'a pris le relai (appli non installée) après ce délai. */
-const PLEX_APP_FALLBACK_MS = 1200;
-
-function openInPlex(appUrl: string, webUrl: string) {
-  function cancelFallback() {
-    window.clearTimeout(fallbackTimer);
-    document.removeEventListener("visibilitychange", onVisibilityChange);
-  }
-  function onVisibilityChange() {
-    // L'appli a pris le relai (on a quitté l'onglet) : plus besoin du repli web.
-    if (document.hidden) cancelFallback();
-  }
-
-  const fallbackTimer = window.setTimeout(() => {
-    cancelFallback();
-    window.location.href = webUrl;
-  }, PLEX_APP_FALLBACK_MS);
-  document.addEventListener("visibilitychange", onVisibilityChange);
-  window.location.href = appUrl;
-}
-
 export function ResultReveal({
   movies,
   winnerMovieId,
@@ -142,13 +119,9 @@ export function ResultReveal({
             >
               Ce soir, vous regardez
             </p>
-            {winner.plexAppUrl && winner.plexWebUrl ? (
+            {winner.plexAppUrl ? (
               <a
-                href={winner.plexWebUrl}
-                onClick={(e) => {
-                  e.preventDefault();
-                  openInPlex(winner.plexAppUrl!, winner.plexWebUrl!);
-                }}
+                href={winner.plexAppUrl}
                 className="mb-1 animate-scale-in"
                 aria-label={`Ouvrir « ${winner.title} » dans Plex`}
               >
@@ -167,9 +140,13 @@ export function ResultReveal({
                 className="mb-5 h-72 w-48 animate-scale-in object-cover shadow-[0_0_0_1px_rgba(247,244,238,0.1)]"
               />
             )}
-            {winner.plexAppUrl && (
+            {winner.plexAppUrl && winner.plexWebUrl && (
               <p className="mb-4 animate-fade-in text-xs text-paper/40">
-                Toucher l&apos;affiche pour l&apos;ouvrir dans Plex
+                Toucher l&apos;affiche pour l&apos;ouvrir dans Plex — appli pas
+                installée ?{" "}
+                <a href={winner.plexWebUrl} className="underline underline-offset-2">
+                  ouvrir dans le navigateur
+                </a>
               </p>
             )}
             <h2

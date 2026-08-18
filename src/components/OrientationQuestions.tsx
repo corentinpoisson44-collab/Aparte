@@ -9,17 +9,17 @@ const COUNT_OPTIONS = [
 ] as const;
 const DEFAULT_COUNT = 5;
 
-const POPULARITY_OPTIONS = [
+const DURATION_OPTIONS = [
   { value: "any", label: "Peu importe" },
-  { value: "known", label: "Un classique" },
-  { value: "hidden", label: "Une pépite" },
+  { value: "short", label: "Plutôt court" },
+  { value: "long", label: "Plutôt long" },
 ] as const;
 
-type Popularity = (typeof POPULARITY_OPTIONS)[number]["value"];
+type Duration = (typeof DURATION_OPTIONS)[number]["value"];
 type Answers = {
   count: number;
   genre: string | null;
-  popularity: Popularity;
+  duration: Duration;
 };
 
 const STEP_COUNT = 3;
@@ -28,12 +28,11 @@ const ADVANCE_DELAY_MS = 220;
 
 /**
  * Questions posées juste après la création d'une session pour orienter le
- * tirage : nombre de films, ambiance/genre, notoriété (classique ou pépite
- * plus confidentielle) — un écran par question, comme un petit
- * questionnaire mobile. Le tirage n'a lieu qu'une fois la dernière réponse
- * donnée (voir POST /api/sessions/[code]/draw) — tout est facultatif,
- * "peu importe" partout (et le nombre de films par défaut) revient au
- * tirage sans préférence.
+ * tirage : nombre de films, ambiance/genre, durée — un écran par question,
+ * comme un petit questionnaire mobile. Le tirage n'a lieu qu'une fois la
+ * dernière réponse donnée (voir POST /api/sessions/[code]/draw) — tout est
+ * facultatif, "peu importe" partout (et le nombre de films par défaut)
+ * revient au tirage sans préférence.
  */
 export function OrientationQuestions({
   code,
@@ -49,7 +48,7 @@ export function OrientationQuestions({
   const [answers, setAnswers] = useState<Answers>({
     count: DEFAULT_COUNT,
     genre: null,
-    popularity: "any",
+    duration: "any",
   });
   const [picked, setPicked] = useState<string | null>(null);
   const [drawing, setDrawing] = useState(false);
@@ -113,9 +112,9 @@ export function OrientationQuestions({
     }, ADVANCE_DELAY_MS);
   }
 
-  function pickPopularity(value: Popularity) {
+  function pickDuration(value: Duration) {
     setPicked(value);
-    const finalAnswers = { ...answers, popularity: value };
+    const finalAnswers = { ...answers, duration: value };
     setAnswers(finalAnswers);
     window.setTimeout(() => draw(finalAnswers), ADVANCE_DELAY_MS);
   }
@@ -134,7 +133,7 @@ export function OrientationQuestions({
     const finalAnswers: Answers = {
       count: answers.count,
       genre: null,
-      popularity: "any",
+      duration: "any",
     };
     setAnswers(finalAnswers);
     draw(finalAnswers);
@@ -197,11 +196,11 @@ export function OrientationQuestions({
       )}
       {step === 2 && (
         <QuestionScreen
-          stepKey="popularity"
-          subtitle="Côté notoriété, plutôt…"
-          options={POPULARITY_OPTIONS}
+          stepKey="duration"
+          subtitle="Côté durée, vous êtes plutôt…"
+          options={DURATION_OPTIONS}
           picked={picked}
-          onPick={pickPopularity}
+          onPick={pickDuration}
           loading={drawing}
           loadingLabel="On pioche…"
         />

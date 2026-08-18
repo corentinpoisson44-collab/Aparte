@@ -116,7 +116,6 @@ export async function syncPlexLibrary(
           ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
           : placeholderPoster(movie.title),
         plexSlug: movie.slug ?? null,
-        audienceRating: movie.audienceRating ?? null,
       },
       create: {
         householdId: household.id,
@@ -130,7 +129,6 @@ export async function syncPlexLibrary(
           ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
           : placeholderPoster(movie.title),
         plexSlug: movie.slug ?? null,
-        audienceRating: movie.audienceRating ?? null,
         platform: "Plex",
         source: MovieSource.PLEX,
       },

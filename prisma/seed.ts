@@ -21,6 +21,8 @@ const mockMovies: Array<{
   platform: string;
   source: MovieSource;
   slug: string;
+  /** Note du public Plex (/10), voir Movie.audienceRating dans le schéma. */
+  audienceRating: number | null;
 }> = [
   // Bibliothèque Plex (non vus)
   {
@@ -33,6 +35,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "chihiro",
+    audienceRating: 9.3,
   },
   {
     title: "Blade Runner 2049",
@@ -44,6 +47,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "blade-runner-2049",
+    audienceRating: 8.6,
   },
   {
     title: "Parasite",
@@ -55,6 +59,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "parasite",
+    audienceRating: 8.9,
   },
   {
     title: "Mad Max: Fury Road",
@@ -66,6 +71,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "mad-max-fury-road",
+    audienceRating: 8.7,
   },
   {
     title: "Whiplash",
@@ -77,6 +83,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "whiplash",
+    audienceRating: 8.5,
   },
   {
     title: "Le Grand Budapest Hotel",
@@ -88,6 +95,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "grand-budapest-hotel",
+    audienceRating: 8.1,
   },
   {
     title: "Interstellar",
@@ -99,6 +107,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "interstellar",
+    audienceRating: 8.8,
   },
   {
     title: "Portrait de la jeune fille en feu",
@@ -110,6 +119,7 @@ const mockMovies: Array<{
     platform: "Plex",
     source: MovieSource.PLEX,
     slug: "portrait-jeune-fille-feu",
+    audienceRating: 6.2,
   },
   // Découverte (hors bibliothèque, streaming)
   {
@@ -122,6 +132,7 @@ const mockMovies: Array<{
     platform: "Netflix",
     source: MovieSource.DISCOVERY,
     slug: "everything-everywhere",
+    audienceRating: 8.9,
   },
   {
     title: "Dune",
@@ -133,6 +144,7 @@ const mockMovies: Array<{
     platform: "Disney+",
     source: MovieSource.DISCOVERY,
     slug: "dune",
+    audienceRating: 8.3,
   },
   {
     title: "La La Land",
@@ -144,6 +156,7 @@ const mockMovies: Array<{
     platform: "Netflix",
     source: MovieSource.DISCOVERY,
     slug: "la-la-land",
+    audienceRating: 8.0,
   },
   {
     title: "Knives Out",
@@ -155,6 +168,7 @@ const mockMovies: Array<{
     platform: "Amazon Prime Video",
     source: MovieSource.DISCOVERY,
     slug: "knives-out",
+    audienceRating: 7.9,
   },
   {
     title: "Spider-Man: Into the Spider-Verse",
@@ -166,6 +180,7 @@ const mockMovies: Array<{
     platform: "Netflix",
     source: MovieSource.DISCOVERY,
     slug: "spiderverse",
+    audienceRating: 9.0,
   },
   {
     title: "The Grand Seduction",
@@ -177,6 +192,7 @@ const mockMovies: Array<{
     platform: "Amazon Prime Video",
     source: MovieSource.DISCOVERY,
     slug: "grand-seduction",
+    audienceRating: 6.4,
   },
   {
     title: "Soul",
@@ -188,6 +204,7 @@ const mockMovies: Array<{
     platform: "Disney+",
     source: MovieSource.DISCOVERY,
     slug: "soul",
+    audienceRating: null,
   },
 ];
 
@@ -218,6 +235,7 @@ async function main() {
         genre: m.genre,
         platform: m.platform,
         source: m.source,
+        audienceRating: m.audienceRating,
         posterUrl: placeholderPoster(m.title),
       },
     });

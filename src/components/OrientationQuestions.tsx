@@ -9,17 +9,17 @@ const COUNT_OPTIONS = [
 ] as const;
 const DEFAULT_COUNT = 5;
 
-const ORIGIN_OPTIONS = [
+const POPULARITY_OPTIONS = [
   { value: "any", label: "Peu importe" },
-  { value: "library", label: "Une valeur sûre" },
-  { value: "discovery", label: "Une découverte" },
+  { value: "known", label: "Un classique" },
+  { value: "hidden", label: "Une pépite" },
 ] as const;
 
-type Origin = (typeof ORIGIN_OPTIONS)[number]["value"];
+type Popularity = (typeof POPULARITY_OPTIONS)[number]["value"];
 type Answers = {
   count: number;
   genre: string | null;
-  origin: Origin;
+  popularity: Popularity;
 };
 
 const STEP_COUNT = 3;
@@ -28,12 +28,12 @@ const ADVANCE_DELAY_MS = 220;
 
 /**
  * Questions posées juste après la création d'une session pour orienter le
- * tirage : nombre de films, ambiance/genre, valeur sûre ou découverte — un
- * écran par question, comme un petit questionnaire mobile. Le tirage n'a
- * lieu qu'une fois la dernière réponse donnée (voir
- * POST /api/sessions/[code]/draw) — tout est facultatif, "peu importe"
- * partout (et le nombre de films par défaut) revient au tirage sans
- * préférence.
+ * tirage : nombre de films, ambiance/genre, notoriété (classique ou pépite
+ * plus confidentielle) — un écran par question, comme un petit
+ * questionnaire mobile. Le tirage n'a lieu qu'une fois la dernière réponse
+ * donnée (voir POST /api/sessions/[code]/draw) — tout est facultatif,
+ * "peu importe" partout (et le nombre de films par défaut) revient au
+ * tirage sans préférence.
  */
 export function OrientationQuestions({
   code,
@@ -49,7 +49,7 @@ export function OrientationQuestions({
   const [answers, setAnswers] = useState<Answers>({
     count: DEFAULT_COUNT,
     genre: null,
-    origin: "any",
+    popularity: "any",
   });
   const [picked, setPicked] = useState<string | null>(null);
   const [drawing, setDrawing] = useState(false);
@@ -113,9 +113,9 @@ export function OrientationQuestions({
     }, ADVANCE_DELAY_MS);
   }
 
-  function pickOrigin(value: Origin) {
+  function pickPopularity(value: Popularity) {
     setPicked(value);
-    const finalAnswers = { ...answers, origin: value };
+    const finalAnswers = { ...answers, popularity: value };
     setAnswers(finalAnswers);
     window.setTimeout(() => draw(finalAnswers), ADVANCE_DELAY_MS);
   }
@@ -134,7 +134,7 @@ export function OrientationQuestions({
     const finalAnswers: Answers = {
       count: answers.count,
       genre: null,
-      origin: "any",
+      popularity: "any",
     };
     setAnswers(finalAnswers);
     draw(finalAnswers);
@@ -197,11 +197,11 @@ export function OrientationQuestions({
       )}
       {step === 2 && (
         <QuestionScreen
-          stepKey="origin"
-          subtitle="Ce soir, plutôt…"
-          options={ORIGIN_OPTIONS}
+          stepKey="popularity"
+          subtitle="Côté notoriété, plutôt…"
+          options={POPULARITY_OPTIONS}
           picked={picked}
-          onPick={pickOrigin}
+          onPick={pickPopularity}
           loading={drawing}
           loadingLabel="On pioche…"
         />

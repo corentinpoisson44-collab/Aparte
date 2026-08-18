@@ -8,16 +8,23 @@ const PLEX_SHARE = 0.6;
 const MAX_REJECTIONS_BEFORE_EXCLUSION = 2;
 /** Seuil en minutes séparant un film "plutôt court" d'un film "plutôt long". */
 const SHORT_MAX_RUNTIME = 100;
+/**
+ * Seuil (note du public Plex, /10) séparant un film "connu" d'une "pépite"
+ * plus confidentielle. Un film sans note (non reconnu par le catalogue
+ * Plex) est traité comme une pépite : l'absence de note est elle-même un
+ * signe de notoriété faible.
+ */
+const KNOWN_RATING_THRESHOLD = 7;
 
 /**
  * Préférences facultatives demandées après la création d'une session pour
- * orienter le tirage (durée, ambiance, valeur sûre vs découverte). Toutes
- * facultatives : un tirage sans préférence se comporte comme avant.
+ * orienter le tirage (durée, ambiance, notoriété). Toutes facultatives :
+ * un tirage sans préférence se comporte comme avant.
  */
 export type DrawFilters = {
   duration?: "short" | "long" | "any";
   genre?: string | null;
-  origin?: "library" | "discovery" | "any";
+  popularity?: "known" | "hidden" | "any";
   yearMin?: number | null;
   yearMax?: number | null;
   /** Nombre de films à proposer (par défaut DEFAULT_COUNT). */
@@ -30,7 +37,12 @@ function pickRandom<T>(items: T[], count: number): T[] {
 }
 
 function matchesFilters(
-  movie: { runtimeMin: number; genre: string; source: MovieSource; year: number },
+  movie: {
+    runtimeMin: number;
+    genre: string;
+    audienceRating: number | null;
+    year: number;
+  },
   filters: DrawFilters
 ): boolean {
   if (filters.duration === "short" && movie.runtimeMin > SHORT_MAX_RUNTIME) {
@@ -45,10 +57,12 @@ function matchesFilters(
   ) {
     return false;
   }
-  if (filters.origin === "library" && movie.source !== MovieSource.PLEX) {
+  const isKnown =
+    movie.audienceRating != null && movie.audienceRating >= KNOWN_RATING_THRESHOLD;
+  if (filters.popularity === "known" && !isKnown) {
     return false;
   }
-  if (filters.origin === "discovery" && movie.source !== MovieSource.DISCOVERY) {
+  if (filters.popularity === "hidden" && isKnown) {
     return false;
   }
   if (filters.yearMin != null && movie.year < filters.yearMin) {

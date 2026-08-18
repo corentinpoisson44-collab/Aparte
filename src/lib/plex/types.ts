@@ -40,4 +40,6 @@ export type PlexMovie = {
   Genre?: { tag: string }[];
   /** Identifiant "watch.plex.tv/movie/{slug}", absent si non reconnu par le catalogue Plex. */
   slug?: string;
+  /** Note du public (/10, ex. Rotten Tomatoes audience score), absente si Plex n'a pas de correspondance de catalogue. */
+  audienceRating?: number;
 };

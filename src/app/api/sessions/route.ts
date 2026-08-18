@@ -5,7 +5,7 @@ import { newSessionCode } from "@/lib/session-code";
 
 /**
  * Crée la session sans tirer les films : le tirage n'a lieu qu'une fois les
- * questions d'orientation (durée, ambiance, valeur sûre vs découverte)
+ * questions d'orientation (nombre de films, ambiance, notoriété)
  * répondues, voir POST /api/sessions/[code]/draw.
  */
 export async function POST() {

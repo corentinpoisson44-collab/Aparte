@@ -70,6 +70,12 @@ model Movie {
   genre       String   @default("")
   platform    String // "Plex" pour tous les films désormais (v0/v1 avaient d'autres plateformes)
   source      MovieSource
+  // Note du public Plex (/10, ex. Rotten Tomatoes audience score), absente
+  // si Plex n'a pas pu associer le film à une entrée de son catalogue. Sert
+  // de repère de notoriété pour le filtre "connu / confidentiel" des
+  // questions d'orientation (voir src/lib/draw.ts) — ce n'est qu'un proxy,
+  // pas un vrai nombre de votes.
+  audienceRating Float?
 
   sessionMovies SessionMovie[]
   watchHistory  WatchHistory[]

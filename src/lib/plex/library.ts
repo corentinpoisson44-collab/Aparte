@@ -45,11 +45,22 @@ export function plexPosterUrl(baseUrl: string, serverToken: string, thumb: strin
 }
 
 /**
- * Lien "app.plex.tv" vers la fiche d'un film : sur mobile/desktop avec
- * l'appli Plex installée, l'OS l'ouvre directement dedans (domaine
- * vérifié par Plex) plutôt que dans un navigateur.
+ * Lien web "app.plex.tv" vers la fiche d'un film — utilisé en repli quand
+ * l'appli Plex n'est pas installée (`app.plex.tv` n'est pas un domaine
+ * "universal link" ouvert par l'appli sur iOS, contrairement à ce qu'on
+ * pourrait attendre : il faut le schéma `plex://`, voir `plexAppUrl`).
  */
 export function plexWebUrl(serverId: string, ratingKey: string): string {
   const key = encodeURIComponent(`/library/metadata/${ratingKey}`);
   return `https://app.plex.tv/desktop/#!/server/${serverId}/details?key=${key}`;
+}
+
+/**
+ * Lien "plex://" vers la fiche d'un film, ouvert directement par l'appli
+ * Plex (iOS/Android/desktop) si elle est installée — c'est le schéma
+ * officiel pour l'action "preplay" (écran d'infos avant lecture).
+ */
+export function plexAppUrl(serverId: string, ratingKey: string): string {
+  const key = encodeURIComponent(`/library/metadata/${ratingKey}`);
+  return `plex://preplay/?metadataKey=${key}&metadataType=1&server=${serverId}`;
 }

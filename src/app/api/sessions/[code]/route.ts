@@ -22,6 +22,9 @@ export async function GET(
     return NextResponse.json({ error: "Session introuvable." }, { status: 404 });
   }
 
+  const matchesFiltersByMovieId = new Map(
+    session.sessionMovies.map((sm) => [sm.movieId, sm.matchesFilters])
+  );
   const movies = session.sessionMovies.map((sm) => sm.movie);
   const plexServerId = session.household.plexServerId;
 
@@ -53,6 +56,7 @@ export async function GET(
         : plexServerId && m.plexKey
           ? plexWebUrl(plexServerId, m.plexKey)
           : null,
+      matchesFilters: matchesFiltersByMovieId.get(m.id) ?? true,
     })),
     submittedMemberIds: session.rankings.map((r) => r.memberId),
     result,

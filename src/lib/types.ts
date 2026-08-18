@@ -16,6 +16,8 @@ export type MovieDTO = {
    * seulement). `null` si Plex n'est pas connecté.
    */
   plexUrl: string | null;
+  /** false si ce film ne correspond pas vraiment aux préférences répondues et n'a été ajouté qu'en complément. */
+  matchesFilters: boolean;
 };
 
 export type MovieScoreDTO = {

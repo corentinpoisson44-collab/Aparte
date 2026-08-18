@@ -6,15 +6,17 @@ sortir de sa zone de confort.
 ## Principe
 
 1. Après avoir créé la session, on répond à quelques questions facultatives
-   pour orienter le tirage : durée (court / long / peu importe), ambiance
-   (genre présent dans le catalogue, ou peu importe). Voir "Questions
-   d'orientation" ci-dessous.
-2. L'app pioche 5 films dans la bibliothèque Plex du foyer (une fois
-   connectée — sinon les mocks seedés) en tenant compte de ces préférences.
-3. Chaque personne classe ces 5 films indépendamment sur son écran.
+   pour orienter le tirage : nombre de films (3 / 5 / 7 / 9, 5 par défaut),
+   durée (court / long / peu importe), ambiance (genre présent dans le
+   catalogue, ou peu importe). Voir "Questions d'orientation" ci-dessous.
+2. L'app pioche ce nombre de films dans la bibliothèque Plex du foyer (une
+   fois connectée — sinon les mocks seedés) en tenant compte de ces
+   préférences ; si trop peu de films correspondent, elle complète avec
+   d'autres et le signale dans l'interface.
+3. Chaque personne classe ces films indépendamment sur son écran.
 4. Une fois les deux classements soumis, l'app révèle le film gagnant,
-   calculé par un Borda count avec garde-fou anti-rejet, avec la possibilité
-   de le lancer directement sur un lecteur Plex (TV, box…) du foyer.
+   calculé par un Borda count avec garde-fou anti-rejet ; toucher l'affiche
+   l'ouvre directement dans Plex.
 
 ## Stack (v0)
 
@@ -68,7 +70,9 @@ sentir, l'adapter WebSocket les supporte (contrairement au mode HTTP).
 
 `Household` (foyer) → `Member` (2 profils) ; `Movie` (catalogue, source
 `PLEX`/`DISCOVERY`, plateforme `platform`) ; `Session` (code, statut) →
-`SessionMovie` (les 5 films piochés) → `Ranking` (classement par membre) →
+`SessionMovie` (les films piochés, avec `matchesFilters` — false si ajouté
+en complément faute de films correspondant aux préférences) → `Ranking`
+(classement par membre) →
 `SessionResult` (gagnant + détail des scores) ; `WatchHistory` (vu / proposé
 / rejeté-dernier, sert à ne pas reproposer un film déjà vu ou trop souvent
 rejeté).
@@ -83,18 +87,23 @@ désactivées — il n'y a plus de sélecteur de sources sur la page d'accueil.
 ## Questions d'orientation
 
 `POST /api/sessions` crée la session sans tirer de film. La page d'accueil
-enchaîne alors sur `src/components/OrientationQuestions.tsx` : durée (court
-≤ 100 min / long / peu importe), ambiance (genres distincts du catalogue,
-récupérés via `GET /api/household/genres`, ou peu importe) et valeur sûre
-(bibliothèque Plex) vs découverte. Une fois les réponses envoyées,
+enchaîne alors sur `src/components/OrientationQuestions.tsx` : nombre de
+films (3 / 5 / 7 / 9, 5 par défaut), durée (court ≤ 100 min / long / peu
+importe), ambiance (genres distincts du catalogue, récupérés via
+`GET /api/household/genres`, ou peu importe) et valeur sûre (bibliothèque
+Plex) vs découverte. Une fois les réponses envoyées,
 `POST /api/sessions/[code]/draw` appelle `drawMoviesForHousehold` avec ces
-préférences. Ce sont des priorités souples, pas des filtres stricts :
-`src/lib/draw.ts` complète toujours avec le reste des films éligibles si
-trop peu correspondent aux préférences, pour ne jamais bloquer une session.
+préférences. Le nombre de films est respecté strictement (il détermine
+combien de films sont piochés) ; les autres préférences sont des priorités
+souples, pas des filtres stricts : `src/lib/draw.ts` complète toujours avec
+le reste des films éligibles si trop peu correspondent, pour ne jamais
+bloquer une session — les films ajoutés ainsi sont marqués
+`matchesFilters: false` et signalés dans l'interface ("hors critères").
 
 ## Algorithme de sélection
 
-Borda count (1er = 5 pts … 5e = 1 pt, sommés sur les deux classements), avec
+Borda count (1er = N pts … dernier = 1 pt, où N est le nombre de films de
+la session, sommés sur les deux classements), avec
 un garde-fou : un film classé dernier par au moins une personne est
 disqualifié même s'il a le meilleur score total. En cas d'égalité, le
 meilleur classement individuel le plus haut départage. Si le garde-fou

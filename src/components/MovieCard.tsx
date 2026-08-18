@@ -52,6 +52,14 @@ export function MovieCard({
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs uppercase tracking-wide text-ink/45">
           <span>{movie.platform}</span>
           {movie.genre && <span>{movie.genre}</span>}
+          {!movie.matchesFilters && (
+            <span
+              className="text-accent"
+              title="Ajouté en complément : ne correspond pas à tous tes critères"
+            >
+              hors critères
+            </span>
+          )}
           <span className="inline-flex items-center gap-1 text-accent">
             <svg
               aria-hidden="true"

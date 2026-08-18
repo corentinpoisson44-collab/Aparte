@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { MovieSource, WatchStatus } from "@/generated/prisma/client";
 
-const PLEX_COUNT = 3;
-const DISCOVERY_COUNT = 2;
+/** Nombre de films proposés par défaut, et part qui vient de la bibliothèque Plex (le reste en découverte). */
+const DEFAULT_COUNT = 5;
+const PLEX_SHARE = 0.6;
 /** Un film rejeté en dernier au moins ce nombre de fois n'est plus reproposé. */
 const MAX_REJECTIONS_BEFORE_EXCLUSION = 2;
 /** Seuil en minutes séparant un film "plutôt court" d'un film "plutôt long". */
@@ -19,6 +20,8 @@ export type DrawFilters = {
   origin?: "library" | "discovery" | "any";
   yearMin?: number | null;
   yearMax?: number | null;
+  /** Nombre de films à proposer (par défaut DEFAULT_COUNT). */
+  count?: number;
 };
 
 function pickRandom<T>(items: T[], count: number): T[] {
@@ -58,16 +61,23 @@ function matchesFilters(
 }
 
 /**
- * Pioche 5 films pour une nouvelle session : 3 Plex (non vus) + 2 découverte,
- * en excluant les films déjà vus et ceux rejetés en dernier trop souvent.
- * `filters` oriente le tirage vers les préférences du soir, mais reste une
- * priorité souple : si trop peu de films correspondent, on complète avec le
- * reste des films éligibles pour toujours proposer 5 films.
+ * Pioche `filters.count` films (5 par défaut) pour une nouvelle session,
+ * ~60% Plex (non vus) et le reste découverte, en excluant les films déjà
+ * vus et ceux rejetés en dernier trop souvent. `filters` oriente le tirage
+ * vers les préférences du soir, mais reste une priorité souple : si trop
+ * peu de films correspondent, on complète avec le reste des films
+ * éligibles pour toujours proposer le nombre de films demandé — ceux qui
+ * ne correspondent pas vraiment aux préférences sont marqués
+ * `matchesFilters: false` pour que l'interface puisse le signaler.
  */
 export async function drawMoviesForHousehold(
   householdId: string,
   filters: DrawFilters = {}
 ) {
+  const target = Math.max(1, Math.round(filters.count ?? DEFAULT_COUNT));
+  const plexCount = Math.max(1, Math.round(target * PLEX_SHARE));
+  const discoveryCount = Math.max(0, target - plexCount);
+
   const watchHistory = await prisma.watchHistory.findMany({
     where: { householdId },
     select: { movieId: true, status: true },
@@ -108,8 +118,8 @@ export async function drawMoviesForHousehold(
     (m) => m.source === MovieSource.DISCOVERY && isEligible(m.id)
   );
 
-  const plexPicks = pickRandom(plexPool, PLEX_COUNT);
-  const discoveryPicks = pickRandom(discoveryPool, DISCOVERY_COUNT);
+  const plexPicks = pickRandom(plexPool, plexCount);
+  const discoveryPicks = pickRandom(discoveryPool, discoveryCount);
 
   let picks = [...plexPicks, ...discoveryPicks];
 
@@ -117,22 +127,24 @@ export async function drawMoviesForHousehold(
   // préférences, on complète avec le reste des films éligibles qui
   // respectent encore les préférences, puis, si ça ne suffit toujours pas,
   // avec n'importe quel film éligible — les préférences ne doivent jamais
-  // empêcher de proposer 5 films.
-  const TARGET = PLEX_COUNT + DISCOVERY_COUNT;
-  if (picks.length < TARGET) {
+  // empêcher de proposer le nombre de films demandé.
+  if (picks.length < target) {
     const pickedIds = new Set(picks.map((m) => m.id));
     const remaining = filteredMovies.filter(
       (m) => isEligible(m.id) && !pickedIds.has(m.id)
     );
-    picks = [...picks, ...pickRandom(remaining, TARGET - picks.length)];
+    picks = [...picks, ...pickRandom(remaining, target - picks.length)];
   }
-  if (picks.length < TARGET) {
+  if (picks.length < target) {
     const pickedIds = new Set(picks.map((m) => m.id));
     const remaining = allMovies.filter(
       (m) => isEligible(m.id) && !pickedIds.has(m.id)
     );
-    picks = [...picks, ...pickRandom(remaining, TARGET - picks.length)];
+    picks = [...picks, ...pickRandom(remaining, target - picks.length)];
   }
 
-  return picks;
+  // Certains films de ce dernier filet ne respectent pas vraiment les
+  // préférences (ou n'ont même pas pu être filtrés dessus) : on l'indique
+  // par film plutôt que de le passer sous silence.
+  return picks.map((m) => ({ ...m, matchesFilters: matchesFilters(m, filters) }));
 }

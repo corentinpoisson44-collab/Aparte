@@ -58,8 +58,11 @@ export function ResultReveal({
     arr.push(...movies.slice(0, winnerIndex + 1));
     const targetIndex = arr.length - 1;
     // Continue the strip past the winner so it doesn't look like the reel
-    // simply ran out — the winner should feel like it's within the pack.
-    for (let i = 0; i < TAIL_LOOPS; i++) arr.push(...movies);
+    // simply ran out — using only the other candidates so the winner
+    // itself never reappears right next to its landing spot.
+    const others = movies.filter((m) => m.id !== winnerMovieId);
+    const tailCount = movies.length * TAIL_LOOPS;
+    for (let i = 0; i < tailCount; i++) arr.push(others[i % others.length]);
     return { stripMovies: arr, targetIndex };
   }, [movies, winnerMovieId]);
 

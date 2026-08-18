@@ -9,6 +9,7 @@ const ITEM_HEIGHT = 168;
 const ITEM_GAP = 12;
 const STEP = ITEM_WIDTH + ITEM_GAP;
 const LOOPS = 4;
+const TAIL_LOOPS = 2;
 const FAST_MS = 1400;
 const SLOW_MS = 2600;
 const SLOW_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
@@ -48,17 +49,20 @@ export function ResultReveal({
 
   const sortedScores = [...scores].sort((a, b) => b.points - a.points);
 
-  const stripMovies = useMemo(() => {
-    if (movies.length < 2) return [];
+  const { stripMovies, targetIndex } = useMemo(() => {
+    if (movies.length < 2) return { stripMovies: [] as MovieDTO[], targetIndex: -1 };
     const winnerIndex = movies.findIndex((m) => m.id === winnerMovieId);
-    if (winnerIndex === -1) return [];
+    if (winnerIndex === -1) return { stripMovies: [] as MovieDTO[], targetIndex: -1 };
     const arr: MovieDTO[] = [];
     for (let i = 0; i < LOOPS; i++) arr.push(...movies);
     arr.push(...movies.slice(0, winnerIndex + 1));
-    return arr;
+    const targetIndex = arr.length - 1;
+    // Continue the strip past the winner so it doesn't look like the reel
+    // simply ran out — the winner should feel like it's within the pack.
+    for (let i = 0; i < TAIL_LOOPS; i++) arr.push(...movies);
+    return { stripMovies: arr, targetIndex };
   }, [movies, winnerMovieId]);
 
-  const targetIndex = stripMovies.length - 1;
   const midIndex = Math.max(0, targetIndex - movies.length);
 
   useEffect(() => {

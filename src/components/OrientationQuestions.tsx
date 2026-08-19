@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { genreEmoji } from "@/lib/genreEmoji";
 
 const COUNT_OPTIONS = [
   { value: "3", label: "3 films" },
@@ -140,8 +141,8 @@ export function OrientationQuestions({
   }
 
   const genreOptions = [
-    { value: "any", label: "Peu importe" },
-    ...genres.map((g) => ({ value: g, label: g })),
+    { value: "any", label: "🤷 Peu importe" },
+    ...genres.map((g) => ({ value: g, label: `${genreEmoji(g)} ${g}` })),
   ];
 
   return (

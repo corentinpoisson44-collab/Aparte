@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { MovieDTO } from "@/lib/types";
 import { formatRuntime } from "@/lib/format";
+import { formatGenresWithEmojis } from "@/lib/genreEmoji";
 import { MoviePoster } from "@/components/MoviePoster";
 import { rankTint } from "@/lib/rankColor";
 
@@ -58,7 +59,7 @@ export function MovieCard({
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs uppercase tracking-wide text-ink/45">
           <span>{movie.platform}</span>
-          {movie.genre && <span>{movie.genre}</span>}
+          {movie.genre && <span>{formatGenresWithEmojis(movie.genre)}</span>}
           {!movie.matchesFilters && (
             <span
               className="text-accent"

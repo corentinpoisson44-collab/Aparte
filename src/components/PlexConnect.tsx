@@ -76,6 +76,7 @@ export function PlexConnect() {
         if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
           if (pollRef.current) clearInterval(pollRef.current);
           setConnecting(false);
+          popup?.close();
           setError("Ça a pris trop de temps — réessaie de te connecter.");
           return;
         }
@@ -86,6 +87,9 @@ export function PlexConnect() {
           if (data.linked) {
             if (pollRef.current) clearInterval(pollRef.current);
             setConnecting(false);
+            // Filet de sécurité si /plex/callback n'a pas pu refermer
+            // l'onglet lui-même (ouvert hors popup, fermeture refusée...).
+            popup?.close();
             await loadStatus();
             setMessage(
               data.serverName

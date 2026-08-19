@@ -189,6 +189,39 @@ const mockMovies: Array<{
     source: MovieSource.DISCOVERY,
     slug: "soul",
   },
+  {
+    title: "Joker",
+    year: 2019,
+    synopsis:
+      "Arthur Fleck, humoriste raté et marginalisé par la société, sombre peu à peu dans la folie et devient le criminel psychopathe connu sous le nom de Joker.",
+    runtimeMin: 122,
+    genre: "Drame, Thriller",
+    platform: "OCS",
+    source: MovieSource.DISCOVERY,
+    slug: "joker",
+  },
+  {
+    title: "Barbie",
+    year: 2023,
+    synopsis:
+      "Chassée de Barbieland pour ne pas être assez parfaite, une poupée Barbie part à l'aventure dans le monde réel avec Ken.",
+    runtimeMin: 114,
+    genre: "Comédie, Fantastique",
+    platform: "HBO",
+    source: MovieSource.DISCOVERY,
+    slug: "barbie",
+  },
+  {
+    title: "Anatomie d'une chute",
+    year: 2023,
+    synopsis:
+      "Sandra est retrouvée en bas de leur chalet, son mari gisant dans la neige. Une enquête est ouverte, sa culpabilité mise en doute.",
+    runtimeMin: 152,
+    genre: "Drame, Thriller",
+    platform: "Canal+",
+    source: MovieSource.DISCOVERY,
+    slug: "anatomie-dune-chute",
+  },
 ];
 
 async function main() {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMember } from "@/lib/client/useMember";
 import { PlexConnect } from "@/components/PlexConnect";
+import { DiscoveryPlatforms } from "@/components/DiscoveryPlatforms";
 import { OrientationQuestions } from "@/components/OrientationQuestions";
 
 export default function Home() {
@@ -105,6 +106,7 @@ export default function Home() {
           </div>
 
           <PlexConnect />
+          <DiscoveryPlatforms />
         </div>
       )}
     </div>

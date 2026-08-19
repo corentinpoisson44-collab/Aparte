@@ -83,10 +83,12 @@ rejeté).
 
 ## Sources
 
-Seule la bibliothèque Plex du foyer est utilisée : `src/lib/draw.ts` ne
-pioche que parmi les films dont la plateforme (`Movie.platform`) vaut
-`"Plex"`. Les autres plateformes (Netflix, Disney+, etc.) ont été
-désactivées — il n'y a plus de sélecteur de sources sur la page d'accueil.
+`src/lib/draw.ts` pioche dans la bibliothèque Plex du foyer (`Movie.platform
+= "Plex"`), plus les plateformes "découverte" que le foyer a activées sur la
+page d'accueil (`src/components/DiscoveryPlatforms.tsx`) : Netflix, Disney+,
+Prime Video, OCS, HBO, Canal+ — voir "Intégration TMDB" ci-dessous. Aucune
+plateforme découverte activée par défaut : le tirage se comporte alors comme
+avant (Plex uniquement, ou les mocks seedés si Plex n'est pas connecté).
 
 ## Questions d'orientation
 
@@ -131,16 +133,32 @@ n'en nécessite pas).
 ### Lancer sur la TV
 
 Une fois le film révélé (`src/components/ResultReveal.tsx`), toucher
-l'affiche ouvre directement le film dans Plex via son `plexUrl`.
+l'affiche ouvre directement le film dans Plex via son `plexUrl`, si le film
+vient de Plex (pas de lien de lancement direct pour les autres plateformes).
 
-## Prochaines étapes (v1+)
+## Intégration TMDB (autres plateformes)
 
-- **v1** : remplacer les films "découverte" en dur par une vraie pioche TMDB
-  (providers de streaming filtrés sur les abonnements).
+Depuis la page d'accueil, "Autres plateformes" (`src/components/DiscoveryPlatforms.tsx`)
+liste Netflix, Disney+, Prime Video, OCS, HBO et Canal+ : cocher celles
+auxquelles le foyer est abonné les enregistre (`Household.discoveryPlatforms`,
+`POST /api/discovery/platforms`), puis "Mettre à jour mes films"
+(`POST /api/discovery/sync`, flux NDJSON comme la synchro Plex) va chercher
+sur TMDB les films les plus populaires disponibles en abonnement (flatrate)
+sur chaque plateforme cochée, pour la région `FR`
+(`src/lib/tmdb/constants.ts`), et les importe dans `Movie`
+(`source = DISCOVERY`). TMDB ne donne pas d'id de plateforme stable
+indépendant de la région : la plateforme est retrouvée par nom
+(`/watch/providers/movie`) à chaque synchro plutôt que figée en dur — si une
+plateforme cochée n'est pas trouvée pour la région, la synchro continue pour
+les autres et le signale dans l'interface. `src/lib/draw.ts` pioche ensuite
+dans ces films exactement comme dans la bibliothèque Plex (~60%
+Plex / 40% découverte par défaut, voir `PLEX_SHARE`). Nécessite
+`TMDB_API_KEY` (voir `.env.example`) — sans elle, le bloc "Autres
+plateformes" ne s'affiche pas.
+
+## Prochaines étapes (v2+)
+
 - **v2** : ratio Plex/découverte configurable, choix manuel du serveur/de la
-  bibliothèque Plex si plusieurs sont disponibles.
+  bibliothèque Plex si plusieurs sont disponibles, rafraîchissement
+  automatique du catalogue découverte (au lieu d'un bouton manuel).
 - **v3** : vrais comptes (magic link), historique enrichi, mobile polish.
-
-### Ce qu'il faudra fournir pour la v1
-
-- **TMDB** : une clé API (gratuite, themoviedb.org).

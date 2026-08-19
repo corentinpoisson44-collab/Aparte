@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { MovieSource, WatchStatus } from "@/generated/prisma/client";
+import { DISCOVERY_PLATFORMS } from "@/lib/tmdb/constants";
 
 /** Nombre de films proposés par défaut, et part qui vient de la bibliothèque Plex (le reste en découverte). */
 const DEFAULT_COUNT = 5;
@@ -97,10 +98,22 @@ export async function drawMoviesForHousehold(
   const isEligible = (movieId: string) =>
     !watchedIds.has(movieId) && !overRejectedIds.has(movieId);
 
-  // Plateformes autres que Plex désactivées : on ne pioche que dans la
-  // bibliothèque Plex synchronisée.
+  // On pioche dans la bibliothèque Plex du foyer, plus les plateformes
+  // "découverte" qu'il a activées (voir Household.discoveryPlatforms et
+  // src/lib/tmdb/) — aucune par défaut, auquel cas seul Plex est utilisé.
+  const household = await prisma.household.findUniqueOrThrow({
+    where: { id: householdId },
+    select: { discoveryPlatforms: true },
+  });
+  const enabledDiscoveryLabels = DISCOVERY_PLATFORMS.filter((p) =>
+    household.discoveryPlatforms.includes(p.key)
+  ).map((p) => p.label);
+
   const allMovies = await prisma.movie.findMany({
-    where: { householdId, platform: "Plex" },
+    where: {
+      householdId,
+      platform: { in: ["Plex", ...enabledDiscoveryLabels] },
+    },
   });
   const filteredMovies = allMovies.filter((m) => matchesFilters(m, filters));
 

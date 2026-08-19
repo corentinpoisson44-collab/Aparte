@@ -18,12 +18,15 @@ export async function createPin(clientId: string): Promise<PlexPin> {
   return res.json();
 }
 
-export function buildAuthUrl(clientId: string, code: string): string {
+export function buildAuthUrl(clientId: string, code: string, forwardUrl?: string): string {
   const params = new URLSearchParams({
     clientID: clientId,
     code,
     "context[device][product]": "Aparté",
   });
+  // Une fois le compte lié, Plex redirige l'onglet d'auth vers cette URL
+  // au lieu de laisser la personne sur app.plex.tv — voir /plex/callback.
+  if (forwardUrl) params.set("forwardUrl", forwardUrl);
   return `https://app.plex.tv/auth#?${params.toString()}`;
 }
 

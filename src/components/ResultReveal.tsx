@@ -4,16 +4,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MovieDTO, MovieScoreDTO } from "@/lib/types";
 import { formatRuntime } from "@/lib/format";
 import { MoviePoster } from "@/components/MoviePoster";
+import { isMuted, playReveal, playTick, setMuted } from "@/lib/client/sounds";
 
 const ITEM_WIDTH = 112;
 const ITEM_HEIGHT = 168;
 const ITEM_GAP = 12;
 const STEP = ITEM_WIDTH + ITEM_GAP;
-const LOOPS = 4;
+const LOOPS = 5;
 const TAIL_LOOPS = 2;
 const FAST_MS = 1400;
 const SLOW_MS = 2600;
-const SLOW_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
+// Freinage progressif (ease-out cubique) plutôt qu'un arrêt quasi immédiat :
+// les clacs s'espacent petit à petit, comme une roue de la fortune.
+const SLOW_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)";
+/** Nombre minimal d'affiches parcourues pendant le ralenti. */
+const MIN_SLOW_ITEMS = 8;
+/** Écart minimal entre deux "clacs", pour qu'ils restent distincts à pleine vitesse. */
+const MIN_TICK_GAP_MS = 35;
 
 export function ResultReveal({
   movies,
@@ -31,6 +38,8 @@ export function ResultReveal({
     easing: "linear",
   });
   const carouselRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [muted, setMutedState] = useState(() => isMuted());
   const revealed = phase === "revealed";
   const [showDetails, setShowDetails] = useState(false);
   const [markedWatched, setMarkedWatched] = useState(false);
@@ -56,7 +65,10 @@ export function ResultReveal({
     return { stripMovies: arr, targetIndex };
   }, [movies, winnerMovieId]);
 
-  const midIndex = Math.max(0, targetIndex - movies.length);
+  const midIndex = Math.max(
+    0,
+    targetIndex - Math.max(MIN_SLOW_ITEMS, movies.length * 2)
+  );
 
   useEffect(() => {
     if (stripMovies.length === 0) {
@@ -87,14 +99,51 @@ export function ResultReveal({
       setPhase("revealed");
     }, FAST_MS + SLOW_MS + 150);
 
+    // Son de roue de la fortune : un "clac" chaque fois qu'une nouvelle
+    // affiche passe sous le repère central. On lit la position réelle de la
+    // bande à chaque frame, si bien que les clacs ralentissent exactement
+    // comme l'animation.
+    let tickRaf = 0;
+    let lastIndex: number | null = null;
+    let lastTickAt = 0;
+    const track = trackRef.current;
+    const followTicks = (now: number) => {
+      if (track) {
+        const x = new DOMMatrixReadOnly(getComputedStyle(track).transform).m41;
+        const index = Math.floor((width / 2 - x + ITEM_GAP / 2) / STEP);
+        if (lastIndex !== null && index !== lastIndex && now - lastTickAt >= MIN_TICK_GAP_MS) {
+          playTick();
+          lastTickAt = now;
+        }
+        lastIndex = index;
+      }
+      tickRaf = requestAnimationFrame(followTicks);
+    };
+    tickRaf = requestAnimationFrame(followTicks);
+    const stopTicks = setTimeout(
+      () => cancelAnimationFrame(tickRaf),
+      FAST_MS + SLOW_MS + 100
+    );
+
     return () => {
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
+      cancelAnimationFrame(tickRaf);
+      clearTimeout(stopTicks);
       clearTimeout(slowTimer);
       clearTimeout(revealTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stripMovies.length]);
+
+  useEffect(() => {
+    if (revealed) playReveal();
+  }, [revealed]);
+
+  function toggleMuted() {
+    setMuted(!muted);
+    setMutedState(!muted);
+  }
 
   async function markWatched() {
     await fetch(`/api/movies/${winnerMovieId}/watched`, { method: "POST" });
@@ -105,7 +154,16 @@ export function ResultReveal({
 
   return (
     <div>
-      <div className="-mx-4 flex min-h-[70vh] flex-col items-center justify-center overflow-hidden bg-ink px-6 py-16 text-paper sm:mx-0">
+      <div className="relative -mx-4 flex min-h-[70vh] flex-col items-center justify-center overflow-hidden bg-ink px-6 py-16 text-paper sm:mx-0">
+        <button
+          type="button"
+          onClick={toggleMuted}
+          aria-label={muted ? "Activer le son" : "Couper le son"}
+          aria-pressed={!muted}
+          className="absolute right-3 top-3 rounded-sm px-2 py-1 text-lg text-paper/50 transition-colors hover:text-paper"
+        >
+          {muted ? "🔇" : "🔊"}
+        </button>
         {!revealed ? (
           <div className="flex w-full flex-col items-center">
             <p className="mb-6 animate-fade-in text-xs uppercase tracking-[0.3em] text-paper/50">
@@ -124,6 +182,7 @@ export function ResultReveal({
                 }}
               >
                 <div
+                  ref={trackRef}
                   className="flex items-center"
                   style={{
                     gap: ITEM_GAP,

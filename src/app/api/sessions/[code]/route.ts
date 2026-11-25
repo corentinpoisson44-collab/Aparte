@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { plexWatchUrl, plexWebUrl } from "@/lib/plex/library";
+import { parseAnswers } from "@/lib/orientation";
 
 export async function GET(
   _req: Request,
@@ -14,6 +15,7 @@ export async function GET(
       sessionMovies: { include: { movie: true } },
       rankings: true,
       result: true,
+      orientationAnswers: true,
       household: { include: { members: true } },
     },
   });
@@ -59,6 +61,18 @@ export async function GET(
       matchesFilters: matchesFiltersByMovieId.get(m.id) ?? true,
     })),
     submittedMemberIds: session.rankings.map((r) => r.memberId),
+    drawn: session.sessionMovies.length > 0,
+    answeredMemberIds: session.orientationAnswers.map((a) => a.memberId),
+    // Les réponses restent secrètes jusqu'au tirage (affichées ensuite dans
+    // le récap "raccord ou pas").
+    answers:
+      session.sessionMovies.length > 0
+        ? session.orientationAnswers.map((a) => ({
+            memberId: a.memberId,
+            skipped: a.skipped,
+            ...parseAnswers(a),
+          }))
+        : [],
     result,
   });
 }

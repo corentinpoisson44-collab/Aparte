@@ -1,128 +1,144 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { genreEmoji } from "@/lib/genreEmoji";
+import { useState } from "react";
+import {
+  EMPTY_ANSWERS,
+  ERA_OPTIONS,
+  MOOD_OPTIONS,
+  TIME_OPTIONS,
+  VETO_OPTIONS,
+  type OrientationAnswers,
+  type Veto,
+} from "@/lib/orientation";
 
-const COUNT_OPTIONS = [
-  { value: "3", label: "3 films" },
-  { value: "5", label: "5 films" },
-  { value: "8", label: "8 films" },
-] as const;
-const DEFAULT_COUNT = 5;
-
-const DURATION_OPTIONS = [
-  { value: "any", label: "Peu importe" },
-  { value: "short", label: "Plutôt court" },
-  { value: "long", label: "Plutôt long" },
-] as const;
-
-type Duration = (typeof DURATION_OPTIONS)[number]["value"];
-type Answers = {
-  count: number;
-  genre: string | null;
-  duration: Duration;
-};
-
-const STEP_COUNT = 3;
+const ANY = "any";
+const STEP_COUNT = 4;
 /** Pause pour laisser voir la sélection avant de passer à l'écran suivant. */
 const ADVANCE_DELAY_MS = 220;
 
+type Choice = { value: string; emoji: string; label: string; hint?: string };
+
+const ANY_CHOICE: Choice = { value: ANY, emoji: "🤷", label: "Peu importe" };
+const NO_VETO_CHOICE: Choice = { value: ANY, emoji: "👌", label: "Tout me va" };
+
+function pick<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
 /**
- * Questions posées juste après la création d'une session pour orienter le
- * tirage : nombre de films, ambiance/genre, durée — un écran par question,
- * comme un petit questionnaire mobile. Le tirage n'a lieu qu'une fois la
- * dernière réponse donnée (voir POST /api/sessions/[code]/draw) — tout est
- * facultatif, "peu importe" partout (et le nombre de films par défaut)
- * revient au tirage sans préférence.
+ * Formulations tirées au hasard à chaque fois, pour que le questionnaire
+ * sonne comme une conversation plutôt qu'un formulaire — avec quelques
+ * clins d'œil au jour et à l'heure.
+ */
+function phrasings(now: Date) {
+  const day = now.getDay();
+  const hour = now.getHours();
+  const clock = `${hour}h${String(now.getMinutes()).padStart(2, "0")}`;
+  const evening = hour >= 17 || hour < 4;
+  const late = hour >= 21 || hour < 4;
+
+  const mood = ["Quel mood ce soir ?", "Tu te sens comment, là ?", "Ce soir, t'as envie de quoi ?"];
+  if (evening && day === 0) mood.push("Dimanche soir… plutôt cocooning ?");
+  if (evening && day === 5) mood.push("Vendredi soir ! Quel mood ?");
+
+  const time = [
+    "Pas trop le temps, besoin d'un film court ?",
+    "On a combien de temps devant nous ?",
+    "Côté temps, t'es large ?",
+  ];
+  if (late) time.push(`Il est ${clock}… film court ou on a la soirée devant nous ?`);
+
+  return {
+    mood: pick(mood),
+    time: pick(time),
+    veto: pick([
+      "Un truc que tu ne veux surtout pas ce soir ?",
+      "Des envies de veto ?",
+      "Quelque chose à éviter absolument ?",
+    ]),
+    era: pick([
+      "Plutôt vieux classique ou sorti récemment ?",
+      "On voyage dans le temps ?",
+      "Une époque qui te tente ?",
+    ]),
+  };
+}
+
+/**
+ * Questions posées à chaque membre avant le tirage — un écran par question :
+ * mood, temps dispo, veto, époque. Les réponses restent secrètes ; dès que
+ * les deux ont répondu, le serveur tire les films en mélangeant les envies
+ * de chacun (voir POST /api/sessions/[code]/answers). Tout est facultatif :
+ * "peu importe" laisse la main à l'autre.
  */
 export function OrientationQuestions({
   code,
-  onDrawn,
+  memberId,
+  onDone,
   onCancel,
 }: {
   code: string;
-  onDrawn: () => void;
-  onCancel: () => void;
+  memberId: string;
+  /** `drawn` : true si cette réponse était la dernière attendue et que les films sont tirés. */
+  onDone: (drawn: boolean) => void;
+  /** Absent : pas de bouton pour quitter au premier écran. */
+  onCancel?: () => void;
 }) {
-  const [genres, setGenres] = useState<string[]>([]);
+  const [titles] = useState(() => phrasings(new Date()));
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Answers>({
-    count: DEFAULT_COUNT,
-    genre: null,
-    duration: "any",
-  });
+  const [answers, setAnswers] = useState<OrientationAnswers>(EMPTY_ANSWERS);
   const [picked, setPicked] = useState<string | null>(null);
-  const [drawing, setDrawing] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/household/genres")
-      .then((res) => (res.ok ? res.json() : { genres: [] }))
-      .then((data: { genres?: string[] }) => {
-        if (!cancelled) setGenres(data.genres ?? []);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function draw(finalAnswers: Answers) {
-    setDrawing(true);
+  async function submit(body: Partial<OrientationAnswers> & { skipped?: boolean }) {
+    setSending(true);
     setError(null);
     try {
-      const res = await fetch(`/api/sessions/${code}/draw`, {
+      const res = await fetch(`/api/sessions/${code}/answers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalAnswers),
+        body: JSON.stringify({ memberId, ...body }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(
-          data.error ?? "Impossible de tirer les films pour le moment, réessaie."
-        );
+        setError(data.error ?? "Impossible d'envoyer tes réponses pour le moment, réessaie.");
         setPicked(null);
         return;
       }
-      onDrawn();
+      onDone(Boolean(data.drawn));
     } catch {
       setError("Petit souci de connexion — réessaie.");
       setPicked(null);
     } finally {
-      setDrawing(false);
+      setSending(false);
     }
   }
 
-  function pickCount(value: string) {
+  /** Enregistre une réponse, puis passe à l'écran suivant (ou envoie tout au dernier). */
+  function answer(value: string, patch: Partial<OrientationAnswers>) {
     setPicked(value);
-    setAnswers((a) => ({ ...a, count: Number(value) }));
+    const next = { ...answers, ...patch };
+    setAnswers(next);
     window.setTimeout(() => {
       setPicked(null);
-      setStep(1);
+      if (step < STEP_COUNT - 1) setStep(step + 1);
+      else submit(next);
     }, ADVANCE_DELAY_MS);
   }
 
-  function pickGenre(value: string) {
-    const genre = value === "any" ? null : value;
-    setPicked(value);
-    setAnswers((a) => ({ ...a, genre }));
-    window.setTimeout(() => {
-      setPicked(null);
-      setStep(2);
-    }, ADVANCE_DELAY_MS);
-  }
-
-  function pickDuration(value: Duration) {
-    setPicked(value);
-    const finalAnswers = { ...answers, duration: value };
-    setAnswers(finalAnswers);
-    window.setTimeout(() => draw(finalAnswers), ADVANCE_DELAY_MS);
+  function toggleVeto(value: Veto) {
+    setAnswers((a) => ({
+      ...a,
+      vetoes: a.vetoes.includes(value)
+        ? a.vetoes.filter((v) => v !== value)
+        : [...a.vetoes, value],
+    }));
   }
 
   function back() {
     if (step === 0) {
-      onCancel();
+      onCancel?.();
       return;
     }
     setError(null);
@@ -130,32 +146,24 @@ export function OrientationQuestions({
     setStep((s) => s - 1);
   }
 
-  function skipAll() {
-    const finalAnswers: Answers = {
-      count: answers.count,
-      genre: null,
-      duration: "any",
-    };
-    setAnswers(finalAnswers);
-    draw(finalAnswers);
-  }
-
-  const genreOptions = [
-    { value: "any", label: "🤷 Peu importe" },
-    ...genres.map((g) => ({ value: g, label: `${genreEmoji(g)} ${g}` })),
-  ];
+  const orAny = (value: string) => (value === ANY ? null : value);
+  const showBack = step > 0 || onCancel;
 
   return (
-    <div className="flex min-h-[22rem] flex-col">
+    <div className="flex min-h-[24rem] flex-col">
       <div className="mb-8 flex items-center gap-3">
-        <button
-          onClick={back}
-          disabled={drawing}
-          aria-label={step === 0 ? "Annuler" : "Retour"}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-lg text-ink/50 transition-colors hover:text-ink disabled:opacity-40"
-        >
-          {step === 0 ? "×" : "‹"}
-        </button>
+        {showBack ? (
+          <button
+            onClick={back}
+            disabled={sending}
+            aria-label={step === 0 ? "Annuler" : "Retour"}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-lg text-ink/50 transition-colors hover:text-ink disabled:opacity-40"
+          >
+            {step === 0 ? "×" : "‹"}
+          </button>
+        ) : (
+          <span className="h-8 w-0" />
+        )}
         <div className="flex flex-1 gap-1.5">
           {Array.from({ length: STEP_COUNT }).map((_, i) => (
             <div
@@ -168,42 +176,66 @@ export function OrientationQuestions({
         </div>
         <button
           type="button"
-          onClick={skipAll}
-          disabled={drawing}
+          onClick={() => submit({ skipped: true })}
+          disabled={sending}
           className="shrink-0 text-sm text-ink/40 underline-offset-4 transition-colors hover:text-ink/70 hover:underline disabled:opacity-40"
         >
-          Passer les questions
+          Passer
         </button>
       </div>
 
       {step === 0 && (
         <QuestionScreen
-          stepKey="count"
-          title="On oriente un peu ?"
-          subtitle="Combien de films vous proposer ce soir ?"
-          options={COUNT_OPTIONS}
-          picked={picked ?? String(answers.count)}
-          onPick={pickCount}
+          stepKey="mood"
+          title={titles.mood}
+          hint="4 petites questions avant les films — tes réponses restent secrètes 🤫"
+          choices={[...MOOD_OPTIONS, ANY_CHOICE]}
+          isPicked={(v) => (picked ?? answers.mood) === v}
+          onPick={(v) => answer(v, { mood: orAny(v) as OrientationAnswers["mood"] })}
         />
       )}
       {step === 1 && (
         <QuestionScreen
-          stepKey="genre"
-          subtitle="Côté ambiance, vous êtes plutôt…"
-          options={genreOptions}
-          picked={picked}
-          onPick={pickGenre}
+          stepKey="time"
+          title={titles.time}
+          choices={[...TIME_OPTIONS, ANY_CHOICE]}
+          isPicked={(v) => (picked ?? answers.time) === v}
+          onPick={(v) => answer(v, { time: orAny(v) as OrientationAnswers["time"] })}
         />
       )}
       {step === 2 && (
         <QuestionScreen
-          stepKey="duration"
-          subtitle="Côté durée, vous êtes plutôt…"
-          options={DURATION_OPTIONS}
-          picked={picked}
-          onPick={pickDuration}
-          loading={drawing}
-          loadingLabel="On pioche…"
+          stepKey="veto"
+          title={titles.veto}
+          hint="Plusieurs choix possibles."
+          choices={[...VETO_OPTIONS, NO_VETO_CHOICE]}
+          isPicked={(v) =>
+            v === ANY ? picked === ANY : answers.vetoes.includes(v as Veto)
+          }
+          onPick={(v) =>
+            v === ANY ? answer(v, { vetoes: [] }) : toggleVeto(v as Veto)
+          }
+          footer={
+            answers.vetoes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="w-full animate-fade-in rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-all duration-150 hover:bg-accent active:scale-[0.98]"
+              >
+                C&apos;est tout
+              </button>
+            )
+          }
+        />
+      )}
+      {step === 3 && (
+        <QuestionScreen
+          stepKey="era"
+          title={titles.era}
+          choices={[...ERA_OPTIONS, ANY_CHOICE]}
+          isPicked={(v) => (picked ?? answers.era) === v}
+          onPick={(v) => answer(v, { era: orAny(v) as OrientationAnswers["era"] })}
+          loading={sending}
         />
       )}
 
@@ -212,49 +244,71 @@ export function OrientationQuestions({
   );
 }
 
-function QuestionScreen<T extends string>({
+function QuestionScreen({
   stepKey,
   title,
-  subtitle,
-  options,
-  picked,
+  hint,
+  choices,
+  isPicked,
   onPick,
+  footer,
   loading,
-  loadingLabel,
 }: {
   stepKey: string;
-  title?: string;
-  subtitle: string;
-  options: readonly { value: T; label: string }[];
-  picked: string | null;
-  onPick: (value: T) => void;
+  title: string;
+  hint?: string;
+  choices: readonly Choice[];
+  isPicked: (value: string) => boolean;
+  onPick: (value: string) => void;
+  footer?: React.ReactNode;
   loading?: boolean;
-  loadingLabel?: string;
 }) {
   return (
     <div key={stepKey} className="flex animate-fade-in-up flex-col gap-4">
-      {title && <h2 className="font-display text-xl">{title}</h2>}
-      <p className="text-ink/60">{subtitle}</p>
+      <div>
+        <h2 className="font-display text-2xl leading-tight">{title}</h2>
+        {hint && <p className="mt-1 text-sm text-ink/50">{hint}</p>}
+      </div>
       <div className="grid grid-cols-3 gap-2">
-        {options.map((opt) => (
+        {choices.map((c) => (
           <button
-            key={opt.value}
+            key={c.value}
             type="button"
             disabled={loading}
-            onClick={() => onPick(opt.value)}
-            className={`flex aspect-square items-center justify-center rounded-sm border p-2 text-center font-display text-sm leading-tight transition-all duration-150 active:scale-[0.99] disabled:opacity-50 ${
-              picked === opt.value
+            aria-pressed={isPicked(c.value)}
+            onClick={() => onPick(c.value)}
+            className={`flex items-center justify-center rounded-sm border text-center font-display leading-tight transition-all duration-150 active:scale-[0.97] disabled:opacity-50 ${
+              // "Peu importe" / "Tout me va" : toute la largeur de la grille,
+              // pour qu'on le repère tout de suite.
+              c.value === ANY
+                ? "col-span-3 gap-3 px-4 py-6 text-lg"
+                : "aspect-square flex-col gap-1.5 p-2 text-sm"
+            } ${
+              isPicked(c.value)
                 ? "border-ink bg-ink text-paper"
                 : "border-ink/20 hover:border-ink"
             }`}
           >
-            {opt.label}
+            <span className={`${c.value === ANY ? "text-3xl" : "text-2xl"} leading-none`}>
+              {c.emoji}
+            </span>
+            <span>
+              {c.label}
+              {c.hint && (
+                <span
+                  className={`mt-1 block font-sans text-xs ${
+                    isPicked(c.value) ? "text-paper/70" : "text-ink/50"
+                  }`}
+                >
+                  {c.hint}
+                </span>
+              )}
+            </span>
           </button>
         ))}
       </div>
-      {loading && (
-        <p className="animate-fade-in text-sm text-ink/50">{loadingLabel}</p>
-      )}
+      {footer}
+      {loading && <p className="animate-fade-in text-sm text-ink/50">C&apos;est noté…</p>}
     </div>
   );
 }

@@ -108,8 +108,9 @@ const ERA_RANGES: Record<Era, YearRange> = {
 
 /**
  * Réponses d'un membre ; `null` ou liste vide = "peu importe" (aucune
- * préférence). Mood, veto et époque sont à choix multiple ; le temps reste
- * un choix unique puisque c'est une durée max.
+ * préférence). Mood et époque sont à choix multiple ; le temps (une durée
+ * max) et le veto sont à choix unique — `vetoes` reste une liste d'au plus
+ * un élément, les vetos des deux membres se cumulant au tirage.
  */
 export type OrientationAnswers = {
   moods: Mood[];
@@ -142,7 +143,7 @@ export function parseAnswers(raw: unknown): OrientationAnswers {
     // `mood` / `era` : ancien format à choix unique, encore accepté.
     moods: someOf(MOOD_OPTIONS, r.moods ?? r.mood),
     time: oneOf(TIME_OPTIONS, r.time),
-    vetoes: someOf(VETO_OPTIONS, r.vetoes),
+    vetoes: someOf(VETO_OPTIONS, r.vetoes).slice(0, 1),
     eras: someOf(ERA_OPTIONS, r.eras ?? r.era),
   };
 }

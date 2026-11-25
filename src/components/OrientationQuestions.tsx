@@ -8,6 +8,7 @@ import {
   TIME_OPTIONS,
   VETO_OPTIONS,
   type OrientationAnswers,
+  type Veto,
 } from "@/lib/orientation";
 
 const ANY = "any";
@@ -22,7 +23,7 @@ const NO_VETO_CHOICE: Choice = { value: ANY, emoji: "👌", label: "Tout me va" 
 const MULTI_HINT = "Plusieurs choix possibles.";
 
 /** Questions à choix multiple et le champ de réponse (liste) correspondant. */
-type MultiField = "moods" | "vetoes" | "eras";
+type MultiField = "moods" | "eras";
 
 function pick<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)];
@@ -69,9 +70,9 @@ function phrasings(now: Date) {
 
 /**
  * Questions posées à chaque membre avant le tirage — un écran par question :
- * mood, temps dispo, veto, époque. Mood, veto et époque sont à choix
- * multiple (bouton pour valider) ; le temps, une durée max, à choix unique
- * (on avance dès qu'on touche une réponse). Les réponses restent secrètes ; dès que
+ * mood, temps dispo, veto, époque. Mood et époque sont à choix multiple
+ * (bouton pour valider) ; le temps (une durée max) et le veto, à choix
+ * unique (on avance dès qu'on touche une réponse). Les réponses restent secrètes ; dès que
  * les deux ont répondu, le serveur tire les films en mélangeant les envies
  * de chacun (voir POST /api/sessions/[code]/answers). Tout est facultatif :
  * "peu importe" laisse la main à l'autre.
@@ -235,9 +236,9 @@ export function OrientationQuestions({
         <QuestionScreen
           stepKey="veto"
           title={titles.veto}
-          hint={MULTI_HINT}
           choices={[...VETO_OPTIONS, NO_VETO_CHOICE]}
-          {...multi("vetoes")}
+          isPicked={(v) => (picked ?? answers.vetoes[0] ?? null) === v}
+          onPick={(v) => answer(v, { vetoes: v === ANY ? [] : [v as Veto] })}
         />
       )}
       {step === 3 && (

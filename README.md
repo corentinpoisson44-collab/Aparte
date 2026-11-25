@@ -100,7 +100,7 @@ d'œil au jour et à l'heure) :
 | Question | Choix | Effet sur le tirage |
 | --- | --- | --- |
 | Mood | 🛋️ Cocooning, 😂 Juste rigoler, 💥 Adrénaline, 😱 Frissons, 🤯 Se retourner le cerveau, 😭 Prêt·e à pleurer | chaque mood couvre plusieurs genres |
-| Temps dispo | ⚡ Vite fait (≤ 100 min), 🍿 Normal (≤ 140 min), 🌙 On a toute la nuit | durée max **et nombre de films** (3 / 5 / 6, 5 si personne ne répond) |
+| Temps dispo | ⚡ Vite fait (≤ 100 min), 🍿 Normal (≤ 140 min), 🌙 On a toute la nuit | durée max **et nombre de films** (5 / 5 / 6, 5 si personne ne répond) |
 | Veto (plusieurs choix) | 🚫 Rien qui fait peur, 🚫 Rien de trop triste, 🚫 Pas d'animation | genres exclus |
 | Époque | 📼 Vieux classique (< 1990), 📀 Années 90–2000, 🆕 Récent (≥ 2010) | années acceptées |
 

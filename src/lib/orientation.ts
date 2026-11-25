@@ -50,9 +50,9 @@ const TIME_MAX_RUNTIME: Record<TimeBudget, number | null> = {
 };
 /**
  * Le nombre de films proposés n'est plus demandé : il découle du temps dispo
- * (pressés → peu de films, pour trancher vite).
+ * (au moins 5 films, un peu plus quand on a toute la nuit).
  */
-const TIME_COUNT: Record<TimeBudget, number> = { quick: 3, normal: 5, night: 6 };
+const TIME_COUNT: Record<TimeBudget, number> = { quick: 5, normal: 5, night: 6 };
 const DEFAULT_COUNT = 5;
 
 // ─── Veto ────────────────────────────────────────────────────────────────

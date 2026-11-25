@@ -41,6 +41,7 @@ model Member {
   householdId String
 
   rankings Ranking[]
+  orientationAnswers OrientationAnswer[]
 
   createdAt DateTime @default(now())
 }
@@ -94,13 +95,37 @@ model Session {
   household   Household @relation(fields: [householdId], references: [id])
   householdId String
   status      SessionStatus @default(PENDING)
+  // Posé au moment où l'un des deux déclenche le tirage : évite un double
+  // tirage si les deux réponses arrivent en même temps (voir src/lib/sessionDraw.ts).
+  drawnAt     DateTime?
 
   sessionMovies SessionMovie[]
+  orientationAnswers OrientationAnswer[]
   rankings      Ranking[]
   result        SessionResult?
   watchHistory  WatchHistory[]
 
   createdAt DateTime @default(now())
+}
+
+// Réponses d'un membre aux questions d'orientation (mood, temps, veto,
+// époque) : le tirage a lieu quand les deux ont répondu, en mélangeant les
+// réponses (voir src/lib/orientation.ts). null = "peu importe".
+model OrientationAnswer {
+  id        String   @id @default(cuid())
+  session   Session  @relation(fields: [sessionId], references: [id])
+  sessionId String
+  member    Member   @relation(fields: [memberId], references: [id])
+  memberId  String
+  mood      String?
+  time      String?
+  vetoes    String[]
+  era       String?
+  // true si la personne a cliqué sur "Passer les questions".
+  skipped   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([sessionId, memberId])
 }
 
 model SessionMovie {

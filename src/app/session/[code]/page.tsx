@@ -6,6 +6,9 @@ import { QRCodeSVG } from "qrcode.react";
 import { ProfileGate } from "@/components/ProfileGate";
 import { RankingBoard } from "@/components/RankingBoard";
 import { ResultReveal } from "@/components/ResultReveal";
+import { OrientationQuestions } from "@/components/OrientationQuestions";
+import { MatchSummary } from "@/components/MatchSummary";
+import { ERA_OPTIONS, MOOD_OPTIONS, TIME_OPTIONS } from "@/lib/orientation";
 import type { Member, SessionStateDTO } from "@/lib/types";
 
 const POLL_INTERVAL_MS = 2500;
@@ -23,6 +26,12 @@ export default function SessionPage() {
   const [session, setSession] = useState<SessionStateDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [summarySeen, setSummarySeen] = useState(false);
+
+  async function refresh() {
+    const data = await fetchSession(code);
+    if (data) setSession(data);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +118,60 @@ export default function SessionPage() {
             }
           };
 
+          // Avant le tirage : chacun répond aux questions d'orientation ; le
+          // tirage part dès que les deux ont répondu.
+          if (!session.drawn) {
+            if (!session.answeredMemberIds.includes(memberId)) {
+              return (
+                <div className="py-6">
+                  <OrientationQuestions
+                    code={code}
+                    memberId={memberId}
+                    onDone={refresh}
+                  />
+                </div>
+              );
+            }
+            return (
+              <WaitingForAnswers
+                code={code}
+                waitingOn={others.filter(
+                  (m) => !session.answeredMemberIds.includes(m.id)
+                )}
+                onDrawn={refresh}
+              />
+            );
+          }
+
+          // Bonus entre le tirage et le classement : les réponses de chacun,
+          // et où vous étiez raccord.
+          const myAnswers = session.answers.find((a) => a.memberId === memberId);
+          const partnerAnswers = session.answers.find((a) => a.memberId !== memberId);
+          const partner = others.find((m) => m.id === partnerAnswers?.memberId);
+          if (
+            session.status === "PENDING" &&
+            !hasSubmitted &&
+            !summarySeen &&
+            !hasSeenSummary(code, memberId) &&
+            myAnswers &&
+            !myAnswers.skipped &&
+            partnerAnswers &&
+            !partnerAnswers.skipped &&
+            partner
+          ) {
+            return (
+              <MatchSummary
+                me={myAnswers}
+                partner={partnerAnswers}
+                partnerName={partner.name}
+                onContinue={() => {
+                  markSummarySeen(code, memberId);
+                  setSummarySeen(true);
+                }}
+              />
+            );
+          }
+
           if (session.status === "REVEALED" && session.result) {
             return (
               <ResultReveal
@@ -157,6 +220,111 @@ export default function SessionPage() {
           );
         }}
       </ProfileGate>
+    </div>
+  );
+}
+
+const summaryKey = (code: string, memberId: string) =>
+  `aparte:summarySeen:${code}:${memberId}`;
+
+function hasSeenSummary(code: string, memberId: string): boolean {
+  return localStorage.getItem(summaryKey(code, memberId)) === "1";
+}
+
+function markSummarySeen(code: string, memberId: string) {
+  localStorage.setItem(summaryKey(code, memberId), "1");
+}
+
+/**
+ * Après avoir répondu, en attendant les réponses de l'autre : le code à
+ * partager, et de quoi lancer le tirage sans attendre.
+ */
+function WaitingForAnswers({
+  code,
+  waitingOn,
+  onDrawn,
+}: {
+  code: string;
+  waitingOn: Member[];
+  onDrawn: () => void;
+}) {
+  const [launching, setLaunching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function launchNow() {
+    setLaunching(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/sessions/${code}/draw`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Impossible de tirer les films pour le moment, réessaie.");
+      }
+      onDrawn();
+    } catch {
+      setError("Petit souci de connexion — réessaie.");
+    } finally {
+      setLaunching(false);
+    }
+  }
+
+  // Outil de test : répond à la place de l'autre (au hasard) pour tester le
+  // parcours à un seul appareil.
+  async function simulateAnswers(otherId: string) {
+    const rand = <T,>(items: readonly T[]) =>
+      items[Math.floor(Math.random() * items.length)];
+    await fetch(`/api/sessions/${code}/answers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        memberId: otherId,
+        mood: rand(MOOD_OPTIONS).value,
+        time: rand(TIME_OPTIONS).value,
+        era: rand(ERA_OPTIONS).value,
+        vetoes: [],
+      }),
+    }).catch(() => {});
+    onDrawn();
+  }
+
+  const names = waitingOn.map((m) => m.name).join(", ");
+
+  return (
+    <div className="animate-fade-in-up py-6">
+      <ShareCode code={code} />
+      <div className="py-10 text-center">
+        <p className="font-display text-xl">C&apos;est noté 🤞</p>
+        <p className="mt-2 text-ink/50">
+          On attend que {names || "l'autre"} réponde à son tour — les films
+          arrivent dès que c&apos;est fait.
+        </p>
+        <button
+          type="button"
+          onClick={launchNow}
+          disabled={launching}
+          className="mt-6 text-sm text-ink/50 underline underline-offset-4 transition-colors hover:text-ink disabled:opacity-40"
+        >
+          {launching ? "On pioche…" : "Lancer sans attendre"}
+        </button>
+        {error && <p className="mt-3 animate-fade-in text-sm text-accent">{error}</p>}
+      </div>
+      {waitingOn.length > 0 && (
+        <div className="rounded-sm border border-dashed border-accent/50 bg-accent/5 p-3 text-sm">
+          <p className="mb-2 text-accent-dim">Outil de test — simuler des réponses :</p>
+          <div className="flex flex-wrap gap-2">
+            {waitingOn.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => simulateAnswers(m.id)}
+                className="rounded-sm border border-accent/40 bg-paper px-3 py-1.5 text-accent-dim"
+              >
+                🧪 Répondre pour « {m.name} »
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

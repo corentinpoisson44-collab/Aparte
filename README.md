@@ -5,15 +5,16 @@ sortir de sa zone de confort.
 
 ## Principe
 
-1. Après avoir créé la session, on répond à quelques questions facultatives
-   pour orienter le tirage : nombre de films (3 / 5 / 8, 5 par défaut),
-   ambiance (genre présent dans le catalogue, ou peu importe), durée
-   (plutôt court / plutôt long / peu importe). Voir "Questions d'orientation"
-   ci-dessous.
-2. L'app pioche ce nombre de films dans la bibliothèque Plex du foyer (une
-   fois connectée — sinon les mocks seedés) en tenant compte de ces
-   préférences ; si trop peu de films correspondent, elle complète avec
-   d'autres et le signale dans l'interface.
+1. Après avoir créé la session, chacun·e répond de son côté (et en secret)
+   à 4 petites questions facultatives : le mood du soir, le temps dispo, un
+   éventuel veto, l'époque. L'invité·e y répond aussi en rejoignant la
+   session. Voir "Questions d'orientation" ci-dessous.
+2. Dès que les deux ont répondu (ou si le créateur lance sans attendre),
+   l'app pioche des films dans la bibliothèque Plex du foyer (une fois
+   connectée — sinon les mocks seedés) en mélangeant les réponses des deux ;
+   le nombre de films découle du temps dispo. Si trop peu de films
+   correspondent, elle complète avec d'autres et le signale dans
+   l'interface. Un petit récap montre alors où vous étiez raccord (ou pas).
 3. Chaque personne classe ces films indépendamment sur son écran.
 4. Une fois les deux classements soumis, l'app révèle le film gagnant,
    calculé par un Borda count avec garde-fou anti-rejet ; toucher l'affiche
@@ -90,18 +91,39 @@ désactivées — il n'y a plus de sélecteur de sources sur la page d'accueil.
 
 ## Questions d'orientation
 
-`POST /api/sessions` crée la session sans tirer de film. La page d'accueil
-enchaîne alors sur `src/components/OrientationQuestions.tsx` : nombre de
-films (3 / 5 / 8, 5 par défaut), ambiance (genres distincts du catalogue,
-récupérés via `GET /api/household/genres`, ou peu importe) et durée
-(plutôt court ≤ 100 min / plutôt long / peu importe). Une fois les réponses
-envoyées, `POST /api/sessions/[code]/draw` appelle `drawMoviesForHousehold` avec ces
-préférences. Le nombre de films est respecté strictement (il détermine
-combien de films sont piochés) ; les autres préférences sont des priorités
-souples, pas des filtres stricts : `src/lib/draw.ts` complète toujours avec
-le reste des films éligibles si trop peu correspondent, pour ne jamais
-bloquer une session — les films ajoutés ainsi sont marqués
-`matchesFilters: false` et signalés dans l'interface ("hors critères").
+`POST /api/sessions` crée la session sans tirer de film. Chaque membre
+passe ensuite par `src/components/OrientationQuestions.tsx` (le créateur
+depuis la page d'accueil, l'invité·e en arrivant sur la session), un écran
+par question, avec des formulations tirées au hasard (et quelques clins
+d'œil au jour et à l'heure) :
+
+| Question | Choix | Effet sur le tirage |
+| --- | --- | --- |
+| Mood | 🛋️ Cocooning, 😂 Juste rigoler, 💥 Adrénaline, 😱 Frissons, 🤯 Se retourner le cerveau, 😭 Prêt·e à pleurer | chaque mood couvre plusieurs genres |
+| Temps dispo | ⚡ Vite fait (≤ 100 min), 🍿 Normal (≤ 140 min), 🌙 On a toute la nuit | durée max **et nombre de films** (3 / 5 / 6, 5 si personne ne répond) |
+| Veto (plusieurs choix) | 🚫 Rien qui fait peur, 🚫 Rien de trop triste, 🚫 Pas d'animation | genres exclus |
+| Époque | 📼 Vieux classique (< 1990), 📀 Années 90–2000, 🆕 Récent (≥ 2010) | années acceptées |
+
+Toutes ont un "peu importe" (ou "Tout me va"), et "Passer" saute tout.
+Les réponses sont enregistrées par `POST /api/sessions/[code]/answers`
+(table `OrientationAnswer`) ; quand tous les membres ont répondu, le tirage
+part (`src/lib/sessionDraw.ts`, protégé contre un double tirage par
+`Session.drawnAt`). "Lancer sans attendre" (`POST /api/sessions/[code]/draw`)
+tire tout de suite avec les réponses déjà données.
+
+Mélange des réponses (`combineAnswers` dans `src/lib/orientation.ts`) :
+"peu importe" ne vote pas et laisse la main à l'autre ; les moods
+s'additionnent (les films qui collent aux deux passent en premier, puis un
+film pour l'un, un pour l'autre) ; le plus pressé l'emporte sur la durée ;
+les vetos se cumulent ; les époques s'additionnent. Ce sont des priorités
+souples : `src/lib/draw.ts` complète si trop peu de films correspondent —
+d'abord avec des films qui respectent au moins les vetos, n'importe lequel
+seulement en dernier recours — et marque ces films `matchesFilters: false`
+("hors critères" dans l'interface).
+
+Une fois les films tirés, les réponses (secrètes jusque-là) sont dévoilées
+dans un petit récap avant le classement (`src/components/MatchSummary.tsx`),
+si les deux ont répondu.
 
 ## Algorithme de sélection
 

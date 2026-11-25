@@ -60,10 +60,11 @@ export default function Home() {
         <p className="animate-fade-in text-ink/50">Un instant…</p>
       ) : memberError ? (
         <p className="animate-fade-in text-center text-accent">{memberError}</p>
-      ) : pendingCode ? (
+      ) : pendingCode && members?.[0] ? (
         <OrientationQuestions
           code={pendingCode}
-          onDrawn={() => router.push(`/session/${pendingCode}`)}
+          memberId={members[0].id}
+          onDone={() => router.push(`/session/${pendingCode}`)}
           onCancel={() => setPendingCode(null)}
         />
       ) : (

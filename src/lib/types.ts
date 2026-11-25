@@ -1,3 +1,5 @@
+import type { OrientationAnswers } from "@/lib/orientation";
+
 export type Member = { id: string; name: string };
 
 export type MovieDTO = {
@@ -35,5 +37,16 @@ export type SessionStateDTO = {
   members: Member[];
   movies: MovieDTO[];
   submittedMemberIds: string[];
+  /** true une fois les films tirés (les deux ont répondu, ou on a lancé sans attendre). */
+  drawn: boolean;
+  /** Membres ayant répondu aux questions d'orientation (ou les ayant passées). */
+  answeredMemberIds: string[];
+  /** Réponses de chacun, dévoilées seulement une fois les films tirés. */
+  answers: MemberAnswersDTO[];
   result: { winnerMovieId: string; scores: MovieScoreDTO[] } | null;
+};
+
+export type MemberAnswersDTO = OrientationAnswers & {
+  memberId: string;
+  skipped: boolean;
 };

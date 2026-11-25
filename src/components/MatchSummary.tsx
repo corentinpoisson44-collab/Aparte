@@ -13,8 +13,8 @@ import type { MemberAnswersDTO } from "@/lib/types";
 type Line = { label: string; text: string; agreed: boolean };
 
 /**
- * Compare une question entre les deux : raccord, l'un laisse la main à
- * l'autre ("peu importe"), ou envies différentes — avec la façon dont on
+ * Compare une question entre les deux : raccord, l'un répond "peu importe"
+ * et on suit l'autre, ou envies différentes — avec la façon dont on
  * les a combinées (voir `combineAnswers` dans src/lib/orientation.ts).
  */
 function compare<T extends string>(
@@ -32,14 +32,14 @@ function compare<T extends string>(
   if (!theirs) {
     return {
       label,
-      text: `${partnerName} t'a laissé la main : ${optionLabel(options, mine!)}`,
+      text: `Peu importe pour ${partnerName} → on a suivi ton choix : ${optionLabel(options, mine!)}`,
       agreed: true,
     };
   }
   if (!mine) {
     return {
       label,
-      text: `Tu as laissé la main à ${partnerName} : ${optionLabel(options, theirs)}`,
+      text: `Peu importe pour toi → on a suivi ${partnerName} : ${optionLabel(options, theirs)}`,
       agreed: true,
     };
   }

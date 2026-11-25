@@ -9,6 +9,7 @@ import { ResultReveal } from "@/components/ResultReveal";
 import { OrientationQuestions } from "@/components/OrientationQuestions";
 import { MatchSummary } from "@/components/MatchSummary";
 import { ERA_OPTIONS, MOOD_OPTIONS, TIME_OPTIONS } from "@/lib/orientation";
+import { primeAudio } from "@/lib/client/sounds";
 import type { Member, SessionStateDTO } from "@/lib/types";
 
 const POLL_INTERVAL_MS = 2500;
@@ -32,6 +33,10 @@ export default function SessionPage() {
     const data = await fetchSession(code);
     if (data) setSession(data);
   }
+
+  // Débloque le son au premier geste sur la page, pour que la roue du
+  // résultat puisse sonner quand il arrive par le polling.
+  useEffect(() => primeAudio(), []);
 
   useEffect(() => {
     let cancelled = false;

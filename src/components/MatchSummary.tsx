@@ -6,72 +6,87 @@ import {
   TIME_OPTIONS,
   VETO_OPTIONS,
   optionLabel,
+  sameSet,
   type Option,
 } from "@/lib/orientation";
 import type { MemberAnswersDTO } from "@/lib/types";
 
 type Line = { label: string; text: string; agreed: boolean };
 
+function labels<T extends string>(options: readonly Option<T>[], values: readonly T[]): string {
+  return values.map((v) => optionLabel(options, v)).join(", ");
+}
+
 /**
  * Compare une question entre les deux : raccord, l'un répond "peu importe"
  * et on suit l'autre, ou envies différentes — avec la façon dont on
  * les a combinées (voir `combineAnswers` dans src/lib/orientation.ts).
+ * Liste vide = "peu importe" ; une question à choix unique passe une liste
+ * d'au plus un élément.
  */
 function compare<T extends string>(
   label: string,
   options: readonly Option<T>[],
-  mine: T | null,
-  theirs: T | null,
+  mine: readonly T[],
+  theirs: readonly T[],
   partnerName: string,
   mixed: (mine: string, theirs: string) => string
 ): Line | null {
-  if (!mine && !theirs) return null;
-  if (mine === theirs) {
-    return { label, text: `${optionLabel(options, mine!)} tous les deux 🎯`, agreed: true };
+  if (mine.length === 0 && theirs.length === 0) return null;
+  if (sameSet(mine, theirs)) {
+    return { label, text: `${labels(options, mine)} tous les deux 🎯`, agreed: true };
   }
-  if (!theirs) {
+  if (theirs.length === 0) {
     return {
       label,
-      text: `Peu importe pour ${partnerName} → on a suivi ton choix : ${optionLabel(options, mine!)}`,
+      text: `Peu importe pour ${partnerName} → on a suivi ton choix : ${labels(options, mine)}`,
       agreed: true,
     };
   }
-  if (!mine) {
+  if (mine.length === 0) {
     return {
       label,
-      text: `Peu importe pour toi → on a suivi ${partnerName} : ${optionLabel(options, theirs)}`,
+      text: `Peu importe pour toi → on a suivi ${partnerName} : ${labels(options, theirs)}`,
+      agreed: true,
+    };
+  }
+  const common = mine.filter((v) => theirs.includes(v));
+  if (common.length > 0) {
+    // Choix multiples qui se recoupent : raccord sur l'essentiel.
+    return {
+      label,
+      text: `Toi : ${labels(options, mine)} · ${partnerName} : ${labels(options, theirs)} → ${labels(options, common)} en commun 🎯`,
       agreed: true,
     };
   }
   return {
     label,
-    text: mixed(optionLabel(options, mine), optionLabel(options, theirs)),
+    text: mixed(labels(options, mine), labels(options, theirs)),
     agreed: false,
   };
 }
 
 function buildLines(me: MemberAnswersDTO, partner: MemberAnswersDTO, partnerName: string): Line[] {
+  const one = <T,>(v: T | null) => (v === null ? [] : [v]);
   const lines: (Line | null)[] = [
-    compare("Mood", MOOD_OPTIONS, me.mood, partner.mood, partnerName, (a, b) =>
+    compare("Mood", MOOD_OPTIONS, me.moods, partner.moods, partnerName, (a, b) =>
       `Toi : ${a} · ${partnerName} : ${b} → on a mélangé les deux 😄`
     ),
-    compare("Temps", TIME_OPTIONS, me.time, partner.time, partnerName, (a, b) => {
+    compare("Temps", TIME_OPTIONS, one(me.time), one(partner.time), partnerName, (a, b) => {
       const order = TIME_OPTIONS.map((o) => o.value);
       const rushed =
         order.indexOf(me.time!) <= order.indexOf(partner.time!) ? a : b;
       return `Toi : ${a} · ${partnerName} : ${b} → le plus pressé l'emporte, ${rushed}`;
     }),
-    compare("Époque", ERA_OPTIONS, me.era, partner.era, partnerName, (a, b) =>
+    compare("Époque", ERA_OPTIONS, me.eras, partner.eras, partnerName, (a, b) =>
       `Toi : ${a} · ${partnerName} : ${b} → un peu des deux`
     ),
   ];
 
   const vetoes = [...new Set([...me.vetoes, ...partner.vetoes])];
   if (vetoes.length > 0) {
-    const list = vetoes.map((v) => optionLabel(VETO_OPTIONS, v)).join(", ");
-    const sameVetoes =
-      me.vetoes.length === partner.vetoes.length &&
-      me.vetoes.every((v) => partner.vetoes.includes(v));
+    const list = labels(VETO_OPTIONS, vetoes);
+    const sameVetoes = sameSet(me.vetoes, partner.vetoes);
     const bothVetoed = me.vetoes.length > 0 && partner.vetoes.length > 0;
     lines.push({
       label: "Vetos",

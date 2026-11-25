@@ -110,17 +110,17 @@ model Session {
 
 // Réponses d'un membre aux questions d'orientation (mood, temps, veto,
 // époque) : le tirage a lieu quand les deux ont répondu, en mélangeant les
-// réponses (voir src/lib/orientation.ts). null = "peu importe".
+// réponses (voir src/lib/orientation.ts). null / liste vide = "peu importe".
 model OrientationAnswer {
   id        String   @id @default(cuid())
   session   Session  @relation(fields: [sessionId], references: [id])
   sessionId String
   member    Member   @relation(fields: [memberId], references: [id])
   memberId  String
-  mood      String?
+  moods     String[] @default([])
   time      String?
   vetoes    String[]
-  era       String?
+  eras      String[] @default([])
   // true si la personne a cliqué sur "Passer les questions".
   skipped   Boolean  @default(false)
   createdAt DateTime @default(now())

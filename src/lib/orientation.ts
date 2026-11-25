@@ -106,44 +106,61 @@ const ERA_RANGES: Record<Era, YearRange> = {
 
 // ─── Réponses ────────────────────────────────────────────────────────────
 
-/** Réponses d'un membre ; `null` = "peu importe" (aucune préférence). */
+/**
+ * Réponses d'un membre ; `null` ou liste vide = "peu importe" (aucune
+ * préférence). Mood et époque sont à choix multiple ; le temps (une durée
+ * max) et le veto sont à choix unique — `vetoes` reste une liste d'au plus
+ * un élément, les vetos des deux membres se cumulant au tirage.
+ */
 export type OrientationAnswers = {
-  mood: Mood | null;
+  moods: Mood[];
   time: TimeBudget | null;
   vetoes: Veto[];
-  era: Era | null;
+  eras: Era[];
 };
 
 export const EMPTY_ANSWERS: OrientationAnswers = {
-  mood: null,
+  moods: [],
   time: null,
   vetoes: [],
-  era: null,
+  eras: [],
 };
 
 function oneOf<T extends string>(options: readonly Option<T>[], value: unknown): T | null {
   return options.some((o) => o.value === value) ? (value as T) : null;
 }
 
+/** Valeurs valides et sans doublon d'une liste (une valeur seule est acceptée aussi). */
+function someOf<T extends string>(options: readonly Option<T>[], raw: unknown): T[] {
+  const items = Array.isArray(raw) ? raw : raw == null ? [] : [raw];
+  return [...new Set(items.map((v) => oneOf(options, v)).filter((v): v is T => v !== null))];
+}
+
 /** Valide des réponses reçues de l'extérieur (corps de requête, base). */
 export function parseAnswers(raw: unknown): OrientationAnswers {
   const r = (raw ?? {}) as Record<string, unknown>;
-  const vetoes = Array.isArray(r.vetoes)
-    ? [...new Set(r.vetoes.map((v) => oneOf(VETO_OPTIONS, v)).filter((v): v is Veto => v !== null))]
-    : [];
   return {
-    mood: oneOf(MOOD_OPTIONS, r.mood),
+    // `mood` / `era` : ancien format à choix unique, encore accepté.
+    moods: someOf(MOOD_OPTIONS, r.moods ?? r.mood),
     time: oneOf(TIME_OPTIONS, r.time),
-    vetoes,
-    era: oneOf(ERA_OPTIONS, r.era),
+    vetoes: someOf(VETO_OPTIONS, r.vetoes).slice(0, 1),
+    eras: someOf(ERA_OPTIONS, r.eras ?? r.era),
   };
+}
+
+/** Mêmes valeurs, dans n'importe quel ordre. */
+export function sameSet<T>(a: readonly T[], b: readonly T[]): boolean {
+  return a.length === b.length && a.every((v) => b.includes(v));
 }
 
 // ─── Combinaison des réponses des deux membres ──────────────────────────
 
 /** Critères de tirage issus du mélange des réponses de chacun. */
 export type DrawCriteria = {
-  /** Un ensemble de genres par membre ayant choisi un mood ; vide = pas de contrainte. */
+  /**
+   * Un ensemble de genres par membre ayant choisi au moins un mood (les
+   * genres de tous ses moods) ; vide = pas de contrainte.
+   */
   moodGenreSets: string[][];
   /** Durée max en minutes (la plus courte des deux) ; `null` = pas de limite. */
   maxRuntime: number | null;
@@ -151,17 +168,18 @@ export type DrawCriteria = {
   eraRanges: YearRange[];
   /** Genres exclus (vetos cumulés des deux). */
   excludedGenres: string[];
-  /** Nombre de films visé (5, ou 7 si les moods diffèrent). */
+  /** Nombre de films visé (5, ou 7 si les moods des deux diffèrent). */
   count: number;
   /** Plancher : on propose toujours au moins ce nombre de films. */
   minCount: number;
 };
 
 /**
- * Mélange les réponses : moods additionnés (les films qui plaisent aux deux
- * passent en priorité, voir src/lib/draw.ts), le plus pressé l'emporte sur
- * la durée, vetos cumulés, époques additionnées. "Peu importe" ne vote pas :
- * il laisse la main à l'autre.
+ * Mélange les réponses : moods additionnés (chacun peut en cocher plusieurs ;
+ * les films qui plaisent aux deux passent en priorité, voir
+ * src/lib/draw.ts), le plus pressé l'emporte sur la durée, vetos cumulés,
+ * époques additionnées. "Peu importe" ne vote pas : il laisse la main à
+ * l'autre.
  */
 export function combineAnswers(all: OrientationAnswers[]): DrawCriteria {
   const times = all.map((a) => a.time).filter((t): t is TimeBudget => t !== null);
@@ -169,16 +187,20 @@ export function combineAnswers(all: OrientationAnswers[]): DrawCriteria {
     ? TIME_ORDER[Math.min(...times.map((t) => TIME_ORDER.indexOf(t)))]
     : null;
 
-  const moods = [...new Set(all.map((a) => a.mood).filter((m): m is Mood => m !== null))];
-  const eras = [...new Set(all.map((a) => a.era).filter((e): e is Era => e !== null))];
+  // Un vote par membre ayant choisi des moods (deux choix identiques n'en font qu'un).
+  const moodVotes: Mood[][] = [];
+  for (const { moods } of all) {
+    if (moods.length > 0 && !moodVotes.some((v) => sameSet(v, moods))) moodVotes.push(moods);
+  }
+  const eras = [...new Set(all.flatMap((a) => a.eras))];
   const vetoes = [...new Set(all.flatMap((a) => a.vetoes))];
 
   return {
-    moodGenreSets: moods.map((m) => MOOD_GENRES[m]),
+    moodGenreSets: moodVotes.map((moods) => [...new Set(moods.flatMap((m) => MOOD_GENRES[m]))]),
     maxRuntime: time ? TIME_MAX_RUNTIME[time] : null,
     eraRanges: eras.map((e) => ERA_RANGES[e]),
     excludedGenres: vetoes.flatMap((v) => VETO_GENRES[v]),
-    count: moods.length > 1 ? MIXED_MOODS_COUNT : MIN_COUNT,
+    count: moodVotes.length > 1 ? MIXED_MOODS_COUNT : MIN_COUNT,
     minCount: MIN_COUNT,
   };
 }

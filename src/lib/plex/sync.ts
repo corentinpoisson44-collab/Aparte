@@ -108,7 +108,7 @@ function chunk<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
-function toFields(movie: PlexMovie, baseUrl: string, accessToken: string): PlexMovieFields {
+function toFields(movie: PlexMovie): PlexMovieFields {
   return {
     title: movie.title,
     year: movie.year ?? 0,
@@ -116,7 +116,7 @@ function toFields(movie: PlexMovie, baseUrl: string, accessToken: string): PlexM
     runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
     genre: plexGenreLabel(movie),
     posterUrl: movie.thumb
-      ? plexPosterUrl(baseUrl, accessToken, movie.thumb)
+      ? plexPosterUrl(movie.thumb)
       : placeholderPoster(movie.title),
     plexSlug: movie.slug ?? null,
     plexWatched: (movie.viewCount ?? 0) > 0,
@@ -153,7 +153,7 @@ export async function syncPlexLibrary(
   // Un même film peut apparaître dans plusieurs bibliothèques : on dédoublonne.
   const plexMovies = new Map<string, PlexMovieFields>();
   for (const movie of sectionMovies.flat()) {
-    plexMovies.set(movie.ratingKey, toFields(movie, server.baseUrl, server.accessToken));
+    plexMovies.set(movie.ratingKey, toFields(movie));
   }
 
   const total = plexMovies.size;

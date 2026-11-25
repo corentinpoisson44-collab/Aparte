@@ -4,7 +4,15 @@
  * Module partagé client/serveur : pas d'accès base ici.
  */
 
-export type Option<T extends string> = { value: T; emoji: string; label: string };
+import { formatRuntime } from "@/lib/format";
+
+export type Option<T extends string> = {
+  value: T;
+  emoji: string;
+  label: string;
+  /** Précision affichée en petit sous le libellé (ex. "1h40 max"). */
+  hint?: string;
+};
 
 // ─── Mood ────────────────────────────────────────────────────────────────
 
@@ -34,20 +42,28 @@ const MOOD_GENRES: Record<Mood, string[]> = {
 
 // ─── Temps dispo ─────────────────────────────────────────────────────────
 
+/** Durée max des films (minutes) pour chaque choix ; `null` = pas de limite. */
+const TIME_MAX_RUNTIME = { quick: 100, normal: 140, night: null } as const;
+
 export const TIME_OPTIONS = [
-  { value: "quick", emoji: "⚡", label: "Vite fait" },
-  { value: "normal", emoji: "🍿", label: "Normal" },
-  { value: "night", emoji: "🌙", label: "On a toute la nuit" },
+  {
+    value: "quick",
+    emoji: "⚡",
+    label: "Vite fait",
+    hint: `${formatRuntime(TIME_MAX_RUNTIME.quick)} max`,
+  },
+  {
+    value: "normal",
+    emoji: "🍿",
+    label: "Normal",
+    hint: `${formatRuntime(TIME_MAX_RUNTIME.normal)} max`,
+  },
+  { value: "night", emoji: "🌙", label: "On a toute la nuit", hint: "sans limite" },
 ] as const satisfies readonly Option<string>[];
 export type TimeBudget = (typeof TIME_OPTIONS)[number]["value"];
 
 /** Ordre "du plus pressé au moins pressé" : à deux, le plus pressé l'emporte. */
 const TIME_ORDER: TimeBudget[] = ["quick", "normal", "night"];
-const TIME_MAX_RUNTIME: Record<TimeBudget, number | null> = {
-  quick: 100,
-  normal: 140,
-  night: null,
-};
 /**
  * Nombre de films proposés (plus demandé) : 5 de base, 7 quand les moods
  * diffèrent pour faire de la place aux deux envies — dans la limite des

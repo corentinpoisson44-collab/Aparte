@@ -16,7 +16,7 @@ const STEP_COUNT = 4;
 /** Pause pour laisser voir la sélection avant de passer à l'écran suivant. */
 const ADVANCE_DELAY_MS = 220;
 
-type Choice = { value: string; emoji: string; label: string };
+type Choice = { value: string; emoji: string; label: string; hint?: string };
 
 const ANY_CHOICE: Choice = { value: ANY, emoji: "🤷", label: "Peu importe" };
 const NO_VETO_CHOICE: Choice = { value: ANY, emoji: "👌", label: "Tout me va" };
@@ -292,7 +292,18 @@ function QuestionScreen({
             <span className={`${c.value === ANY ? "text-3xl" : "text-2xl"} leading-none`}>
               {c.emoji}
             </span>
-            <span>{c.label}</span>
+            <span>
+              {c.label}
+              {c.hint && (
+                <span
+                  className={`mt-1 block font-sans text-xs ${
+                    isPicked(c.value) ? "text-paper/70" : "text-ink/50"
+                  }`}
+                >
+                  {c.hint}
+                </span>
+              )}
+            </span>
           </button>
         ))}
       </div>

@@ -277,13 +277,21 @@ function QuestionScreen({
             disabled={loading}
             aria-pressed={isPicked(c.value)}
             onClick={() => onPick(c.value)}
-            className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-sm border p-2 text-center font-display text-sm leading-tight transition-all duration-150 active:scale-[0.97] disabled:opacity-50 ${
+            className={`flex items-center justify-center rounded-sm border text-center font-display leading-tight transition-all duration-150 active:scale-[0.97] disabled:opacity-50 ${
+              // "Peu importe" / "Tout me va" : toute la largeur de la grille,
+              // pour qu'on le repère tout de suite.
+              c.value === ANY
+                ? "col-span-3 gap-3 px-4 py-6 text-lg"
+                : "aspect-square flex-col gap-1.5 p-2 text-sm"
+            } ${
               isPicked(c.value)
                 ? "border-ink bg-ink text-paper"
                 : "border-ink/20 hover:border-ink"
             }`}
           >
-            <span className="text-2xl leading-none">{c.emoji}</span>
+            <span className={`${c.value === ANY ? "text-3xl" : "text-2xl"} leading-none`}>
+              {c.emoji}
+            </span>
             <span>{c.label}</span>
           </button>
         ))}

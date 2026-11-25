@@ -140,8 +140,11 @@ export function PlexConnect() {
             setSyncProgress({ imported: event.imported, total: event.total });
           } else if (event.type === "done") {
             sawDone = true;
+            const plural = (n: number) => (n > 1 ? "s" : "");
             setMessage(
-              `${event.imported} film${event.imported > 1 ? "s" : ""} ajouté${event.imported > 1 ? "s" : ""} depuis « ${event.serverName} ».`
+              event.added > 0
+                ? `${event.added} nouveau${event.added > 1 ? "x" : ""} film${plural(event.added)} ajouté${plural(event.added)} depuis « ${event.serverName} ».`
+                : `Bibliothèque à jour (${event.total} film${plural(event.total)} sur « ${event.serverName} »).`
             );
           } else if (event.type === "error") {
             sawError = true;

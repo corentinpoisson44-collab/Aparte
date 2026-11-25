@@ -76,9 +76,63 @@ function plexGenreLabel(movie: PlexMovie): string {
     .join(", ");
 }
 
+/** Champs d'un film recopiés depuis Plex à chaque synchro. */
+type PlexMovieFields = {
+  title: string;
+  year: number;
+  synopsis: string;
+  runtimeMin: number;
+  genre: string;
+  posterUrl: string;
+  plexSlug: string | null;
+  plexWatched: boolean;
+};
+
+const FIELD_NAMES: (keyof PlexMovieFields)[] = [
+  "title",
+  "year",
+  "synopsis",
+  "runtimeMin",
+  "genre",
+  "posterUrl",
+  "plexSlug",
+  "plexWatched",
+];
+
+/** Taille des lots d'écriture : une requête SQL par lot. */
+const WRITE_BATCH_SIZE = 500;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+}
+
+function toFields(movie: PlexMovie): PlexMovieFields {
+  return {
+    title: movie.title,
+    year: movie.year ?? 0,
+    synopsis: movie.summary ?? "",
+    runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
+    genre: plexGenreLabel(movie),
+    posterUrl: movie.thumb
+      ? plexPosterUrl(movie.thumb)
+      : placeholderPoster(movie.title),
+    plexSlug: movie.slug ?? null,
+    plexWatched: (movie.viewCount ?? 0) > 0,
+  };
+}
+
+/**
+ * Synchronise la bibliothèque Plex en un minimum d'allers-retours vers la
+ * base : une lecture des films déjà connus, puis des insertions et mises à
+ * jour groupées par lots — uniquement pour les films nouveaux ou modifiés.
+ * (Un upsert par film dépassait le temps maximal de la fonction serverless
+ * sur les grosses bibliothèques, et la synchro était coupée en cours.)
+ */
 export async function syncPlexLibrary(
   household: Household,
-  onProgress?: (imported: number, total: number) => void
+  onProgress?: (processed: number, total: number) => void
 ) {
   const clientId = await ensurePlexClientId(household);
   const server = await discoverServer({ ...household, plexClientId: clientId });
@@ -90,51 +144,95 @@ export async function syncPlexLibrary(
     );
   }
 
-  const movies: PlexMovie[] = [];
-  for (const section of sections) {
-    movies.push(
-      ...(await fetchSectionMovies(server.baseUrl, clientId, server.accessToken, section.key))
-    );
+  const sectionMovies = await Promise.all(
+    sections.map((section) =>
+      fetchSectionMovies(server.baseUrl, clientId, server.accessToken, section.key)
+    )
+  );
+
+  // Un même film peut apparaître dans plusieurs bibliothèques : on dédoublonne.
+  const plexMovies = new Map<string, PlexMovieFields>();
+  for (const movie of sectionMovies.flat()) {
+    plexMovies.set(movie.ratingKey, toFields(movie));
   }
 
-  const total = movies.length;
-  let imported = 0;
-  onProgress?.(imported, total);
+  const total = plexMovies.size;
+  let processed = 0;
+  onProgress?.(processed, total);
 
-  for (const movie of movies) {
-    await prisma.movie.upsert({
-      where: {
-        householdId_plexKey: { householdId: household.id, plexKey: movie.ratingKey },
-      },
-      update: {
-        title: movie.title,
-        year: movie.year ?? 0,
-        synopsis: movie.summary ?? "",
-        runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
-        genre: plexGenreLabel(movie),
-        posterUrl: movie.thumb
-          ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
-          : placeholderPoster(movie.title),
-        plexSlug: movie.slug ?? null,
-      },
-      create: {
+  const existing = await prisma.movie.findMany({
+    where: { householdId: household.id, plexKey: { in: [...plexMovies.keys()] } },
+    select: {
+      id: true,
+      plexKey: true,
+      title: true,
+      year: true,
+      synopsis: true,
+      runtimeMin: true,
+      genre: true,
+      posterUrl: true,
+      plexSlug: true,
+      plexWatched: true,
+    },
+  });
+  const existingByKey = new Map(existing.map((m) => [m.plexKey as string, m]));
+
+  const toCreate: (PlexMovieFields & { plexKey: string })[] = [];
+  const toUpdate: (PlexMovieFields & { id: string })[] = [];
+  for (const [plexKey, fields] of plexMovies) {
+    const current = existingByKey.get(plexKey);
+    if (!current) {
+      toCreate.push({ ...fields, plexKey });
+    } else if (FIELD_NAMES.some((f) => current[f] !== fields[f])) {
+      toUpdate.push({ ...fields, id: current.id });
+    } else {
+      processed++;
+    }
+  }
+  onProgress?.(processed, total);
+
+  for (const batch of chunk(toCreate, WRITE_BATCH_SIZE)) {
+    await prisma.movie.createMany({
+      data: batch.map((m) => ({
+        ...m,
         householdId: household.id,
-        plexKey: movie.ratingKey,
-        title: movie.title,
-        year: movie.year ?? 0,
-        synopsis: movie.summary ?? "",
-        runtimeMin: movie.duration ? Math.round(movie.duration / 60000) : 0,
-        genre: plexGenreLabel(movie),
-        posterUrl: movie.thumb
-          ? plexPosterUrl(server.baseUrl, server.accessToken, movie.thumb)
-          : placeholderPoster(movie.title),
-        plexSlug: movie.slug ?? null,
         platform: "Plex",
         source: MovieSource.PLEX,
-      },
+      })),
+      skipDuplicates: true,
     });
-    imported++;
-    onProgress?.(imported, total);
+    processed += batch.length;
+    onProgress?.(processed, total);
+  }
+
+  // Mise à jour groupée : les nouvelles valeurs sont passées en un seul
+  // paramètre JSON, décodé côté Postgres, pour faire tout le lot en une requête.
+  for (const batch of chunk(toUpdate, WRITE_BATCH_SIZE)) {
+    await prisma.$executeRaw`
+      UPDATE "Movie" AS m SET
+        "title" = v."title",
+        "year" = v."year",
+        "synopsis" = v."synopsis",
+        "runtimeMin" = v."runtimeMin",
+        "genre" = v."genre",
+        "posterUrl" = v."posterUrl",
+        "plexSlug" = v."plexSlug",
+        "plexWatched" = v."plexWatched"
+      FROM jsonb_to_recordset(${JSON.stringify(batch)}::jsonb) AS v(
+        "id" text,
+        "title" text,
+        "year" integer,
+        "synopsis" text,
+        "runtimeMin" integer,
+        "genre" text,
+        "posterUrl" text,
+        "plexSlug" text,
+        "plexWatched" boolean
+      )
+      WHERE m."id" = v."id"
+    `;
+    processed += batch.length;
+    onProgress?.(processed, total);
   }
 
   await prisma.household.update({
@@ -142,5 +240,11 @@ export async function syncPlexLibrary(
     data: { plexLastSyncedAt: new Date() },
   });
 
-  return { imported, sectionsCount: sections.length, serverName: server.name };
+  return {
+    total,
+    added: toCreate.length,
+    updated: toUpdate.length,
+    sectionsCount: sections.length,
+    serverName: server.name,
+  };
 }

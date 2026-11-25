@@ -62,6 +62,9 @@ model Movie {
   // la fiche du film — absent si Plex n'a pas pu faire correspondre le film
   // à une entrée de son catalogue (vidéo perso non reconnue, etc.).
   plexSlug    String?
+  // true si le film est marqué comme vu sur le serveur Plex (viewCount > 0
+  // au moment de la dernière synchro) : il n'est alors plus proposé au tirage.
+  plexWatched Boolean  @default(false)
   title       String
   year        Int
   posterUrl   String

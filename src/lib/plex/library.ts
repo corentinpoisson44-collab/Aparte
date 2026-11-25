@@ -40,8 +40,43 @@ export async function fetchSectionMovies(
   return data.MediaContainer.Metadata ?? [];
 }
 
-export function plexPosterUrl(baseUrl: string, serverToken: string, thumb: string): string {
-  return `${baseUrl}${thumb}?X-Plex-Token=${encodeURIComponent(serverToken)}`;
+/**
+ * URL (relative à Aparté) d'une jaquette Plex, servie par le proxy
+ * `/api/plex/poster`. On ne pointe plus directement vers le serveur Plex :
+ * l'adresse joignable depuis Vercel (relais, IP publique, http…) ne l'est
+ * pas forcément depuis le navigateur, elle peut changer entre deux synchros,
+ * et elle exposait le jeton du serveur dans la page.
+ */
+export function plexPosterUrl(thumb: string): string {
+  return `/api/plex/poster?thumb=${encodeURIComponent(thumb)}`;
+}
+
+/** Une jaquette Plex légitime : chemin de métadonnées du serveur, rien d'autre. */
+export function isPlexThumbPath(thumb: string): boolean {
+  return /^\/library\/metadata\/\d+\/(thumb|art)(\/\d+)?$/.test(thumb);
+}
+
+/**
+ * Jaquette redimensionnée par le serveur Plex (bien plus légère que
+ * l'original, ce qui compte quand le serveur passe par le relais Plex).
+ */
+export async function fetchPlexPoster(
+  baseUrl: string,
+  clientId: string,
+  serverToken: string,
+  thumb: string
+): Promise<Response> {
+  const params = new URLSearchParams({
+    width: "400",
+    height: "600",
+    minSize: "1",
+    upscale: "1",
+    url: thumb,
+  });
+  return fetch(`${baseUrl}/photo/:/transcode?${params}`, {
+    headers: { ...plexHeaders(clientId, serverToken), Accept: "image/*" },
+    signal: AbortSignal.timeout(8000),
+  });
 }
 
 /**

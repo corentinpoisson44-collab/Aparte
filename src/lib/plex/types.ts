@@ -40,4 +40,6 @@ export type PlexMovie = {
   Genre?: { tag: string }[];
   /** Identifiant "watch.plex.tv/movie/{slug}", absent si non reconnu par le catalogue Plex. */
   slug?: string;
+  /** Nombre de lectures complètes pour le compte du jeton utilisé ; absent si jamais vu. */
+  viewCount?: number;
 };

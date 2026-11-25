@@ -49,11 +49,13 @@ const TIME_MAX_RUNTIME: Record<TimeBudget, number | null> = {
   night: null,
 };
 /**
- * Le nombre de films proposés n'est plus demandé : il découle du temps dispo
- * (au moins 5 films, un peu plus quand on a toute la nuit).
+ * Nombre de films proposés (plus demandé) : 5 de base, 7 quand les moods
+ * diffèrent pour faire de la place aux deux envies — dans la limite des
+ * films qui collent vraiment aux critères (voir src/lib/draw.ts), sans
+ * jamais descendre sous 5.
  */
-const TIME_COUNT: Record<TimeBudget, number> = { quick: 5, normal: 5, night: 6 };
-const DEFAULT_COUNT = 5;
+export const MIN_COUNT = 5;
+const MIXED_MOODS_COUNT = 7;
 
 // ─── Veto ────────────────────────────────────────────────────────────────
 
@@ -133,8 +135,10 @@ export type DrawCriteria = {
   eraRanges: YearRange[];
   /** Genres exclus (vetos cumulés des deux). */
   excludedGenres: string[];
-  /** Nombre de films à proposer, déduit du temps dispo. */
+  /** Nombre de films visé (5, ou 7 si les moods diffèrent). */
   count: number;
+  /** Plancher : on propose toujours au moins ce nombre de films. */
+  minCount: number;
 };
 
 /**
@@ -158,7 +162,8 @@ export function combineAnswers(all: OrientationAnswers[]): DrawCriteria {
     maxRuntime: time ? TIME_MAX_RUNTIME[time] : null,
     eraRanges: eras.map((e) => ERA_RANGES[e]),
     excludedGenres: vetoes.flatMap((v) => VETO_GENRES[v]),
-    count: time ? TIME_COUNT[time] : DEFAULT_COUNT,
+    count: moods.length > 1 ? MIXED_MOODS_COUNT : MIN_COUNT,
+    minCount: MIN_COUNT,
   };
 }
 

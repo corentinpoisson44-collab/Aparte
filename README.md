@@ -11,8 +11,9 @@ sortir de sa zone de confort.
    session. Voir "Questions d'orientation" ci-dessous.
 2. Dès que les deux ont répondu (ou si le créateur lance sans attendre),
    l'app pioche des films dans la bibliothèque Plex du foyer (une fois
-   connectée — sinon les mocks seedés) en mélangeant les réponses des deux ;
-   le nombre de films découle du temps dispo. Si trop peu de films
+   connectée — sinon les mocks seedés) en mélangeant les réponses des deux :
+   5 films, ou 7 si vos moods diffèrent et que la bibliothèque a assez de
+   films qui collent. Si trop peu de films
    correspondent, elle complète avec d'autres et le signale dans
    l'interface. Un petit récap montre alors où vous étiez raccord (ou pas).
 3. Chaque personne classe ces films indépendamment sur son écran.
@@ -100,7 +101,7 @@ d'œil au jour et à l'heure) :
 | Question | Choix | Effet sur le tirage |
 | --- | --- | --- |
 | Mood | 🛋️ Cocooning, 😂 Juste rigoler, 💥 Adrénaline, 😱 Frissons, 🤯 Se retourner le cerveau, 😭 Prêt·e à pleurer | chaque mood couvre plusieurs genres |
-| Temps dispo | ⚡ Vite fait (≤ 100 min), 🍿 Normal (≤ 140 min), 🌙 On a toute la nuit | durée max **et nombre de films** (5 / 5 / 6, 5 si personne ne répond) |
+| Temps dispo | ⚡ Vite fait (≤ 100 min), 🍿 Normal (≤ 140 min), 🌙 On a toute la nuit | durée max |
 | Veto (plusieurs choix) | 🚫 Rien qui fait peur, 🚫 Rien de trop triste, 🚫 Pas d'animation | genres exclus |
 | Époque | 📼 Vieux classique (< 1990), 📀 Années 90–2000, 🆕 Récent (≥ 2010) | années acceptées |
 

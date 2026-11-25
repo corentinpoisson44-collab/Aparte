@@ -97,9 +97,6 @@ export async function drawMoviesForHousehold(
   householdId: string,
   criteria: DrawCriteria
 ) {
-  const target = Math.max(1, Math.round(criteria.count));
-  const plexCount = Math.max(1, Math.round(target * PLEX_SHARE));
-  const discoveryCount = Math.max(0, target - plexCount);
 
   const watchHistory = await prisma.watchHistory.findMany({
     where: { householdId },
@@ -134,6 +131,14 @@ export async function drawMoviesForHousehold(
     where: { householdId, platform: "Plex", plexWatched: false },
   });
   const filteredMovies = allMovies.filter((m) => matchesCriteria(m, criteria));
+
+  // Nombre de films : celui visé (plus quand les moods diffèrent), mais pas
+  // au-delà de ce qui colle vraiment aux critères — mieux vaut 5 films
+  // pertinents que 7 dont 2 "hors critères" — et jamais moins du plancher.
+  const matchingCount = filteredMovies.filter((m) => isEligible(m.id)).length;
+  const target = Math.max(criteria.minCount, Math.min(criteria.count, matchingCount));
+  const plexCount = Math.max(1, Math.round(target * PLEX_SHARE));
+  const discoveryCount = Math.max(0, target - plexCount);
 
   const plexPool = filteredMovies.filter(
     (m) => m.source === MovieSource.PLEX && isEligible(m.id)

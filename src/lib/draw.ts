@@ -98,9 +98,10 @@ export async function drawMoviesForHousehold(
     !watchedIds.has(movieId) && !overRejectedIds.has(movieId);
 
   // Plateformes autres que Plex désactivées : on ne pioche que dans la
-  // bibliothèque Plex synchronisée.
+  // bibliothèque Plex synchronisée, sans les films déjà marqués comme vus
+  // sur le serveur Plex (exclusion stricte, même en filet de sécurité).
   const allMovies = await prisma.movie.findMany({
-    where: { householdId, platform: "Plex" },
+    where: { householdId, platform: "Plex", plexWatched: false },
   });
   const filteredMovies = allMovies.filter((m) => matchesFilters(m, filters));
 

@@ -8,7 +8,6 @@ import {
   TIME_OPTIONS,
   VETO_OPTIONS,
   type OrientationAnswers,
-  type Veto,
 } from "@/lib/orientation";
 
 const ANY = "any";
@@ -20,6 +19,10 @@ type Choice = { value: string; emoji: string; label: string; hint?: string };
 
 const ANY_CHOICE: Choice = { value: ANY, emoji: "🤷", label: "Peu importe" };
 const NO_VETO_CHOICE: Choice = { value: ANY, emoji: "👌", label: "Tout me va" };
+const MULTI_HINT = "Plusieurs choix possibles.";
+
+/** Questions à choix multiple et le champ de réponse (liste) correspondant. */
+type MultiField = "moods" | "vetoes" | "eras";
 
 function pick<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)];
@@ -66,7 +69,9 @@ function phrasings(now: Date) {
 
 /**
  * Questions posées à chaque membre avant le tirage — un écran par question :
- * mood, temps dispo, veto, époque. Les réponses restent secrètes ; dès que
+ * mood, temps dispo, veto, époque. Mood, veto et époque sont à choix
+ * multiple (bouton pour valider) ; le temps, une durée max, à choix unique
+ * (on avance dès qu'on touche une réponse). Les réponses restent secrètes ; dès que
  * les deux ont répondu, le serveur tire les films en mélangeant les envies
  * de chacun (voir POST /api/sessions/[code]/answers). Tout est facultatif :
  * "peu importe" laisse la main à l'autre.
@@ -127,13 +132,37 @@ export function OrientationQuestions({
     }, ADVANCE_DELAY_MS);
   }
 
-  function toggleVeto(value: Veto) {
-    setAnswers((a) => ({
-      ...a,
-      vetoes: a.vetoes.includes(value)
-        ? a.vetoes.filter((v) => v !== value)
-        : [...a.vetoes, value],
-    }));
+  /** Coche / décoche une option d'une question à choix multiple. */
+  function toggle(field: MultiField, value: string) {
+    setAnswers((a) => {
+      const current = a[field] as string[];
+      const next = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      return { ...a, [field]: next };
+    });
+  }
+
+  /** Props communes aux questions à choix multiple ("Peu importe" vide la liste et avance). */
+  function multi(field: MultiField) {
+    const selected = answers[field] as string[];
+    return {
+      isPicked: (v: string) => (v === ANY ? picked === ANY : selected.includes(v)),
+      onPick: (v: string) => (v === ANY ? answer(v, { [field]: [] }) : toggle(field, v)),
+      footer: selected.length > 0 && (
+        <button
+          type="button"
+          disabled={sending}
+          onClick={() => {
+            if (step < STEP_COUNT - 1) setStep(step + 1);
+            else submit(answers);
+          }}
+          className="w-full animate-fade-in rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-all duration-150 hover:bg-accent active:scale-[0.98] disabled:opacity-50"
+        >
+          {step < STEP_COUNT - 1 ? "C'est tout" : "C'est parti"}
+        </button>
+      ),
+    };
   }
 
   function back() {
@@ -188,10 +217,9 @@ export function OrientationQuestions({
         <QuestionScreen
           stepKey="mood"
           title={titles.mood}
-          hint="4 petites questions avant les films — tes réponses restent secrètes 🤫"
+          hint={`4 petites questions avant les films — tes réponses restent secrètes 🤫 ${MULTI_HINT}`}
           choices={[...MOOD_OPTIONS, ANY_CHOICE]}
-          isPicked={(v) => (picked ?? answers.mood) === v}
-          onPick={(v) => answer(v, { mood: orAny(v) as OrientationAnswers["mood"] })}
+          {...multi("moods")}
         />
       )}
       {step === 1 && (
@@ -207,34 +235,18 @@ export function OrientationQuestions({
         <QuestionScreen
           stepKey="veto"
           title={titles.veto}
-          hint="Plusieurs choix possibles."
+          hint={MULTI_HINT}
           choices={[...VETO_OPTIONS, NO_VETO_CHOICE]}
-          isPicked={(v) =>
-            v === ANY ? picked === ANY : answers.vetoes.includes(v as Veto)
-          }
-          onPick={(v) =>
-            v === ANY ? answer(v, { vetoes: [] }) : toggleVeto(v as Veto)
-          }
-          footer={
-            answers.vetoes.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setStep(3)}
-                className="w-full animate-fade-in rounded-sm bg-ink px-4 py-3 font-medium text-paper transition-all duration-150 hover:bg-accent active:scale-[0.98]"
-              >
-                C&apos;est tout
-              </button>
-            )
-          }
+          {...multi("vetoes")}
         />
       )}
       {step === 3 && (
         <QuestionScreen
           stepKey="era"
           title={titles.era}
+          hint={MULTI_HINT}
           choices={[...ERA_OPTIONS, ANY_CHOICE]}
-          isPicked={(v) => (picked ?? answers.era) === v}
-          onPick={(v) => answer(v, { era: orAny(v) as OrientationAnswers["era"] })}
+          {...multi("eras")}
           loading={sending}
         />
       )}

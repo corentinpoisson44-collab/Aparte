@@ -283,9 +283,9 @@ function WaitingForAnswers({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         memberId: otherId,
-        mood: rand(MOOD_OPTIONS).value,
+        moods: [rand(MOOD_OPTIONS).value],
         time: rand(TIME_OPTIONS).value,
-        era: rand(ERA_OPTIONS).value,
+        eras: [rand(ERA_OPTIONS).value],
         vetoes: [],
       }),
     }).catch(() => {});
